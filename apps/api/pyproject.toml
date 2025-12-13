@@ -8,6 +8,7 @@ dependencies = [
     "fastapi",
     "asyncpg",
     "sqlalchemy>=2,<3",
+    "tqdm>=4.66",
     "uvicorn[standard]",
 ]
 
@@ -17,6 +18,7 @@ dev = [
     "mypy>=1",
     "pre-commit>=3",
     "ruff>=0.6",
+    "types-tqdm>=4.67.0.20250809",
 ]
 
 [tool.uv]
