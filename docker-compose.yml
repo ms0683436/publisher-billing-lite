@@ -6,7 +6,7 @@ services:
     volumes:
       - ./apps/api/app:/app/app
       - ./apps/api/pyproject.toml:/app/pyproject.toml:ro
-      - ./apps/api/uv.lock:/app/uv.lock:ro
+      - ./apps/api/uv.lock:/app/uv.lock
     working_dir: /app
     command: uv run uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
 

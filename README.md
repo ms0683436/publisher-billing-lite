@@ -40,7 +40,7 @@ docker compose up --build
 
 - Web: <http://localhost:5173>
 - API: <http://localhost:8000>
-  - Example endpoint: <http://localhost:8000/api/hello>
+  - Example endpoint: <http://localhost:8000/api/v1/hello>
 
 To stop:
 
@@ -65,3 +65,32 @@ cd apps/web
 pnpm install --frozen-lockfile
 VITE_API_URL=http://localhost:8000 pnpm dev --host 0.0.0.0 --port 5173
 ```
+
+## Linting / formatting
+
+### Web (frontend)
+
+```bash
+cd apps/web
+pnpm lint
+pnpm build
+```
+
+### API (backend, Python 3.12)
+
+```bash
+cd apps/api
+uv sync --frozen --group dev
+uv run black app
+uv run ruff check app
+uv run mypy app
+```
+
+To enforce these checks locally on commit:
+
+```bash
+# from repo root
+uv run --project apps/api pre-commit install
+```
+
+CI also runs the same checks via `.github/workflows/python-quality.yml`.

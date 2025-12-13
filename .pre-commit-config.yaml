@@ -1,0 +1,27 @@
+repos:
+  - repo: local
+    hooks:
+      - id: api-black
+        name: black (apps/api)
+        entry: uv run --project apps/api black apps/api/app
+        language: system
+        pass_filenames: false
+
+      - id: api-ruff
+        name: ruff (apps/api)
+        entry: uv run --project apps/api ruff check apps/api/app
+        language: system
+        pass_filenames: false
+
+      - id: api-mypy
+        name: mypy (apps/api)
+        entry: uv run --project apps/api mypy apps/api/app
+        language: system
+        pass_filenames: false
+
+      - id: web-pnpm-lint
+        name: pnpm lint (apps/web)
+        entry: bash -lc 'cd apps/web && pnpm lint'
+        language: system
+        pass_filenames: false
+        files: ^apps/web/
