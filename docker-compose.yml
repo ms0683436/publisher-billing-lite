@@ -1,25 +1,43 @@
 services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-publisher_billing}
+      - POSTGRES_USER=${POSTGRES_USER:-publisher}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-publisher}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   api:
     build: ./apps/api
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
     volumes:
       - ./apps/api/app:/app/app
       - ./apps/api/pyproject.toml:/app/pyproject.toml:ro
       - ./apps/api/uv.lock:/app/uv.lock
     working_dir: /app
     command: uv run uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
 
   web:
     build: ./apps/web
     ports:
-      - "5173:5173"
+      - "${WEB_PORT:-5173}:5173"
     volumes:
       - ./apps/web:/app
       - /app/node_modules  # Prevent bind mount from overwriting node_modules
     working_dir: /app
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
     command: pnpm dev --host 0.0.0.0 --port 5173
     depends_on:
       - api
+
+volumes:
+  postgres_data:

@@ -8,7 +8,7 @@ function App() {
 
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    fetch(`${apiUrl}/api/hello`)
+    fetch(`${apiUrl}/api/v1/hello`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch')
         return res.json()

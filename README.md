@@ -34,6 +34,14 @@ A small full-stack app for managing publisher campaigns/orders and invoices (bil
 
 Prerequisites: Docker Desktop.
 
+Create a `.env` file (see `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+If you have port conflicts, edit `.env` and change `DB_PORT`, `API_PORT`, and/or `WEB_PORT`.
+
 ```bash
 docker compose up --build
 ```
@@ -46,24 +54,6 @@ To stop:
 
 ```bash
 docker compose down
-```
-
-## Local Development (optional)
-
-### API
-
-```bash
-cd apps/api
-uv sync --frozen
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Web
-
-```bash
-cd apps/web
-pnpm install --frozen-lockfile
-VITE_API_URL=http://localhost:8000 pnpm dev --host 0.0.0.0 --port 5173
 ```
 
 ## Linting / formatting

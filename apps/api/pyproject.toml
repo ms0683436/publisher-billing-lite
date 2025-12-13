@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Publisher Billing Lite API"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic",
     "fastapi",
+    "asyncpg",
+    "sqlalchemy>=2,<3",
     "uvicorn[standard]",
 ]
 
