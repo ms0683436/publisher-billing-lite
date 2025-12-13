@@ -1,5 +1,7 @@
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from .api.v1.router import router as v1_router
 
 app = FastAPI(title="Publisher Billing API")
 
@@ -16,13 +18,4 @@ app.add_middleware(
 )
 
 
-router = APIRouter(prefix="/api/v1")
-
-
-@router.get("/hello")
-def hello():
-    print("Hello World endpoint called")
-    return {"message": "hello world"}
-
-
-app.include_router(router)
+app.include_router(v1_router)
