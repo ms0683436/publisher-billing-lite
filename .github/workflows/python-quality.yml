@@ -1,0 +1,42 @@
+name: python-quality
+
+on:
+  push:
+    paths:
+      - "apps/api/**"
+      - ".github/workflows/python-quality.yml"
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - ".github/workflows/python-quality.yml"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install --no-cache-dir uv
+
+      - name: Sync deps (incl dev tools)
+        working-directory: apps/api
+        run: uv sync --frozen --group dev
+
+      - name: Black (check)
+        working-directory: apps/api
+        run: uv run black --check app
+
+      - name: Ruff
+        working-directory: apps/api
+        run: uv run ruff check app
+
+      - name: Mypy
+        working-directory: apps/api
+        run: uv run mypy app
