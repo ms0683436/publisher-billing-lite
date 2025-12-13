@@ -1,0 +1,16 @@
+[project]
+name = "publisher-billing-api"
+version = "0.1.0"
+description = "Publisher Billing Lite API"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+]
+
+[tool.uv]
+package = false
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
