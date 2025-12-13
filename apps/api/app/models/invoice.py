@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -27,7 +26,6 @@ class Invoice(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     campaign: Mapped[Campaign] = relationship(back_populates="invoice")
     invoice_line_items: Mapped[list[InvoiceLineItem]] = relationship(

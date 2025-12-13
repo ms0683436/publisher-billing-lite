@@ -17,9 +17,8 @@ services:
     env_file:
       - .env
     volumes:
-      - ./apps/api/app:/app/app
-      - ./apps/api/pyproject.toml:/app/pyproject.toml:ro
-      - ./apps/api/uv.lock:/app/uv.lock
+      - ./apps/api:/app
+      - /app/.venv  # Prevent bind mount from overwriting .venv
     working_dir: /app
     command: uv run uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
     depends_on:
