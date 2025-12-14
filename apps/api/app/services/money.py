@@ -10,11 +10,18 @@ def parse_money_2dp(value: str) -> Decimal:
 
     API contract: requests/responses represent money as strings.
     Persistence uses NUMERIC(scale=15), but we normalize adjustments to 2dp.
+
+    Raises:
+        ValueError: If value is not a valid finite decimal string.
     """
 
     try:
         dec = Decimal(value)
     except (InvalidOperation, ValueError):
+        raise ValueError(f"Invalid decimal string: {value}") from None
+
+    # Reject special values (NaN, Infinity) which are invalid for money
+    if not dec.is_finite():
         raise ValueError(f"Invalid decimal string: {value}") from None
 
     return dec.quantize(_TWO_DP, rounding=ROUND_HALF_UP)
