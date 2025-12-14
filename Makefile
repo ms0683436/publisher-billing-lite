@@ -1,4 +1,4 @@
-.PHONY: help up down migrate migration-generate migration-downgrade migration-current migration-history db-reset seed db-setup test test-unit test-integration test-api test-cov
+.PHONY: help up down web-install migrate migration-generate migration-downgrade migration-current migration-history db-reset seed db-setup test test-unit test-integration test-api test-cov
 
 help:
 	@echo "Available commands:"
@@ -29,13 +29,20 @@ up:
 	else \
 		echo "✅ .env already exists."; \
 	fi
-	@echo "🚀 Starting services..."
-	docker compose up --build -d
+	@echo "🚀 Starting db + api..."
+	docker compose up --build -d db api
+	@echo "📦 Installing web dependencies (via docker compose)..."
+	$(MAKE) web-install
+	@echo "🚀 Starting web..."
+	docker compose up --build -d web
 	@echo "✅ Services started!"
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Run 'make db-setup' to initialize the database"
 	@echo "  2. Access the app at http://localhost:5173"
+
+web-install:
+	docker compose run --rm --no-deps --build web pnpm install --frozen-lockfile --force
 
 # Stop all services
 down:

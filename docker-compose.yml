@@ -36,7 +36,7 @@ services:
       - "${WEB_PORT:-5173}:5173"
     volumes:
       - ./apps/web:/app
-      - /app/node_modules  # Prevent bind mount from overwriting node_modules
+      - web_node_modules:/app/node_modules  # Keep deps in a named volume
     working_dir: /app
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
@@ -46,3 +46,5 @@ services:
 
 volumes:
   postgres_data:
+  web_node_modules:
+
