@@ -40,3 +40,56 @@ jobs:
       - name: Mypy
         working-directory: apps/api
         run: uv run mypy app
+
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: publisher
+          POSTGRES_PASSWORD: publisher
+          POSTGRES_DB: publisher_billing_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U publisher -d publisher_billing_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install --no-cache-dir uv
+
+      - name: Sync deps (incl test tools)
+        working-directory: apps/api
+        run: uv sync --frozen --group test
+
+      - name: Run tests
+        working-directory: apps/api
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://publisher:publisher@localhost:5432/publisher_billing_test
+          PYTHONPATH: .
+        run: uv run pytest -v --tb=short
+
+      - name: Run tests with coverage
+        working-directory: apps/api
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://publisher:publisher@localhost:5432/publisher_billing_test
+          PYTHONPATH: .
+        run: uv run pytest --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: apps/api/coverage.xml
+          fail_ci_if_error: false
