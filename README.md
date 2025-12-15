@@ -79,23 +79,17 @@ make down
 
 ## Linting / formatting
 
-### Web (frontend)
-
 ```bash
-cd apps/web
-pnpm lint
-pnpm build
+make lint            # Run all linters (API + Web)
+make lint-api        # Ruff + Mypy for Python
+make lint-web        # ESLint for TypeScript
+
+make format          # Format all code
+make format-api      # Black for Python
+make format-check    # Check formatting without changes
 ```
 
-### API (backend, Python 3.12)
-
-```bash
-cd apps/api
-uv sync --frozen --group dev
-uv run black app
-uv run ruff check app
-uv run mypy app
-```
+> Note: Requires services to be running (`make up`)
 
 To enforce these checks locally on commit:
 
