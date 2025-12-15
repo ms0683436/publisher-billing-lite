@@ -8,37 +8,51 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..models import InvoiceLineItem
 
 
-async def get_invoice_line_item(
-    session: AsyncSession, invoice_line_item_id: int, *, for_update: bool = False
-) -> InvoiceLineItem | None:
-    stmt = select(InvoiceLineItem).where(InvoiceLineItem.id == invoice_line_item_id)
+async def batch_update_adjustments(
+    session: AsyncSession,
+    invoice_id: int,
+    updates: list[tuple[int, Decimal]],
+    *,
+    for_update: bool = False,
+) -> list[InvoiceLineItem]:
+    """Batch update adjustments for multiple invoice line items.
+
+    Args:
+        session: Database session
+        invoice_id: Invoice ID (for ownership validation)
+        updates: List of (invoice_line_item_id, adjustments) tuples
+
+    Returns:
+        List of updated InvoiceLineItems.
+        Empty list if any invoice_line_item_id not found or doesn't belong to invoice.
+    """
+    if not updates:
+        return []
+
+    ids = [u[0] for u in updates]
+    stmt = select(InvoiceLineItem).where(
+        InvoiceLineItem.id.in_(ids),
+        InvoiceLineItem.invoice_id == invoice_id,
+    )
     if for_update:
         stmt = stmt.with_for_update()
-    return (await session.execute(stmt)).scalar_one_or_none()
 
+    result = await session.execute(stmt)
+    items = {ili.id: ili for ili in result.scalars().all()}
 
-async def update_invoice_line_item_adjustments(
-    session: AsyncSession,
-    invoice_line_item_id: int,
-    *,
-    adjustments: Decimal,
-    for_update: bool = False,
-) -> InvoiceLineItem | None:
-    """Update adjustments for an invoice line item.
+    # Verify all IDs found and belong to invoice
+    if len(items) != len(updates):
+        return []
 
-    Repository responsibility: persistence only.
-    Validation (e.g. allowed range/format) should live in services.
-    """
+    # Apply updates
+    updates_map = dict(updates)
+    for ili_id, ili in items.items():
+        ili.adjustments = updates_map[ili_id]
 
-    invoice_line_item = await get_invoice_line_item(
-        session, invoice_line_item_id, for_update=for_update
-    )
-    if invoice_line_item is None:
-        return None
-
-    invoice_line_item.adjustments = adjustments
     await session.flush()
-    # updated_at is server-side; refresh to avoid implicit IO on attribute access
-    # which can raise sqlalchemy.exc.MissingGreenlet under async.
-    await session.refresh(invoice_line_item)
-    return invoice_line_item
+
+    # Refresh all to get updated_at
+    for ili in items.values():
+        await session.refresh(ili)
+
+    return list(items.values())

@@ -93,3 +93,230 @@ class TestGetInvoice:
 
         assert response.status_code == 404
         assert "detail" in response.json()
+
+
+class TestPatchInvoiceAdjustments:
+    """Tests for PATCH /api/v1/invoices/{invoice_id}/adjustments."""
+
+    async def test_batch_update_success(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should update multiple adjustments in one request."""
+        campaign = await make_campaign(name="Test Campaign")
+        li1 = await make_line_item(campaign, name="Item 1")
+        li2 = await make_line_item(campaign, name="Item 2")
+        invoice = await make_invoice(campaign)
+        ili1 = await make_invoice_line_item(
+            invoice, li1, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+        ili2 = await make_invoice_line_item(
+            invoice, li2, actual_amount=Decimal("200.00"), adjustments=Decimal("0.00")
+        )
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili1.id, "adjustments": "10.00"},
+                    {"invoice_line_item_id": ili2.id, "adjustments": "-5.50"},
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["invoice_id"] == invoice.id
+        assert len(data["updated"]) == 2
+
+        # Check updated values
+        updated_map = {u["id"]: u for u in data["updated"]}
+        assert updated_map[ili1.id]["adjustments"] == "10.00"
+        assert updated_map[ili1.id]["billable_amount"] == "110.00"
+        assert updated_map[ili2.id]["adjustments"] == "-5.50"
+        assert updated_map[ili2.id]["billable_amount"] == "194.50"
+
+    async def test_batch_update_single_item(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should work with single item update."""
+        campaign = await make_campaign(name="Test Campaign")
+        li = await make_line_item(campaign, name="Item 1")
+        invoice = await make_invoice(campaign)
+        ili = await make_invoice_line_item(
+            invoice, li, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili.id, "adjustments": "25.00"},
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["updated"]) == 1
+        assert data["updated"][0]["adjustments"] == "25.00"
+
+    async def test_batch_update_rounding(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should round to 2 decimal places with HALF_UP."""
+        campaign = await make_campaign(name="Test Campaign")
+        li = await make_line_item(campaign, name="Item 1")
+        invoice = await make_invoice(campaign)
+        ili = await make_invoice_line_item(
+            invoice, li, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili.id, "adjustments": "10.125"},
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        # 10.125 rounds to 10.13 with HALF_UP
+        assert response.json()["updated"][0]["adjustments"] == "10.13"
+
+    async def test_batch_update_empty_list_rejected(self, client, make_campaign, make_invoice):
+        """Should reject empty updates list."""
+        campaign = await make_campaign(name="Test Campaign")
+        invoice = await make_invoice(campaign)
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={"updates": []},
+        )
+
+        assert response.status_code == 422
+
+    async def test_batch_update_invalid_decimal_rejected(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should reject invalid decimal values."""
+        campaign = await make_campaign(name="Test Campaign")
+        li = await make_line_item(campaign, name="Item 1")
+        invoice = await make_invoice(campaign)
+        ili = await make_invoice_line_item(
+            invoice, li, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili.id, "adjustments": "not-a-number"},
+                ]
+            },
+        )
+
+        assert response.status_code == 422
+
+    async def test_batch_update_wrong_invoice_rejected(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should reject if invoice_line_item_id belongs to different invoice."""
+        campaign1 = await make_campaign(name="Campaign 1")
+        campaign2 = await make_campaign(name="Campaign 2")
+        li1 = await make_line_item(campaign1, name="Item 1")
+        li2 = await make_line_item(campaign2, name="Item 2")
+        invoice1 = await make_invoice(campaign1)
+        invoice2 = await make_invoice(campaign2)
+        ili1 = await make_invoice_line_item(
+            invoice1, li1, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+        await make_invoice_line_item(
+            invoice2, li2, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+
+        # Try to update ili1 using invoice2's endpoint
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice2.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili1.id, "adjustments": "10.00"},
+                ]
+            },
+        )
+
+        assert response.status_code == 400
+        assert "do not belong to invoice" in response.json()["detail"]
+
+    async def test_batch_update_nonexistent_line_item_rejected(
+        self,
+        client,
+        make_campaign,
+        make_invoice,
+    ):
+        """Should reject if invoice_line_item_id doesn't exist."""
+        campaign = await make_campaign(name="Test Campaign")
+        invoice = await make_invoice(campaign)
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": 99999, "adjustments": "10.00"},
+                ]
+            },
+        )
+
+        assert response.status_code == 400
+
+    async def test_batch_update_nan_rejected(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should reject NaN values."""
+        campaign = await make_campaign(name="Test Campaign")
+        li = await make_line_item(campaign, name="Item 1")
+        invoice = await make_invoice(campaign)
+        ili = await make_invoice_line_item(
+            invoice, li, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili.id, "adjustments": "NaN"},
+                ]
+            },
+        )
+
+        assert response.status_code in (400, 422)

@@ -12,8 +12,10 @@ from .invoice import (
     InvoiceSummary,
 )
 from .invoice_line_item import (
+    AdjustmentItem,
+    BatchAdjustmentsResponse,
+    BatchAdjustmentsUpdate,
     InvoiceLineItemResponse,
-    InvoiceLineItemUpdate,
 )
 from .line_item import (
     LineItemBase,
@@ -34,8 +36,10 @@ __all__ = [
     "InvoiceListResponse",
     "InvoiceSummary",
     # InvoiceLineItem
+    "AdjustmentItem",
+    "BatchAdjustmentsResponse",
+    "BatchAdjustmentsUpdate",
     "InvoiceLineItemResponse",
-    "InvoiceLineItemUpdate",
     # LineItem
     "LineItemBase",
     "LineItemInCampaign",

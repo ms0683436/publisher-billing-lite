@@ -36,10 +36,6 @@ export interface InvoiceListResponse {
   offset: number;
 }
 
-export interface InvoiceLineItemUpdate {
-  adjustments: string;
-}
-
 export interface InvoiceLineItemResponse {
   id: number;
   invoice_id: number;
@@ -48,4 +44,18 @@ export interface InvoiceLineItemResponse {
   adjustments: string;
   billable_amount: string;
   updated_at: string;
+}
+
+export interface AdjustmentItem {
+  invoice_line_item_id: number;
+  adjustments: string;
+}
+
+export interface BatchAdjustmentsUpdate {
+  updates: AdjustmentItem[];
+}
+
+export interface BatchAdjustmentsResponse {
+  invoice_id: number;
+  updated: InvoiceLineItemResponse[];
 }

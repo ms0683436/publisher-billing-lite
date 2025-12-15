@@ -6,9 +6,26 @@ from pydantic import BaseModel, computed_field, field_validator
 from .base import MoneySerializerMixin
 
 
-class InvoiceLineItemUpdate(BaseModel):
-    """PATCH /api/v1/invoice-line-items/{id} request"""
+class InvoiceLineItemResponse(MoneySerializerMixin, BaseModel):
+    """Invoice line item response with computed billable amount."""
 
+    id: int
+    invoice_id: int
+    line_item_id: int
+    actual_amount: Decimal
+    adjustments: Decimal
+    updated_at: datetime
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def billable_amount(self) -> Decimal:
+        return self.actual_amount + self.adjustments
+
+
+class AdjustmentItem(BaseModel):
+    """Single adjustment in a batch update"""
+
+    invoice_line_item_id: int
     adjustments: str
 
     @field_validator("adjustments")
@@ -23,17 +40,21 @@ class InvoiceLineItemUpdate(BaseModel):
             ) from None
 
 
-class InvoiceLineItemResponse(MoneySerializerMixin, BaseModel):
-    """PATCH /api/v1/invoice-line-items/{id} response"""
+class BatchAdjustmentsUpdate(BaseModel):
+    """PATCH /api/v1/invoices/{id}/adjustments request"""
 
-    id: int
+    updates: list[AdjustmentItem]
+
+    @field_validator("updates")
+    @classmethod
+    def validate_non_empty(cls, v: list[AdjustmentItem]) -> list[AdjustmentItem]:
+        if not v:
+            raise ValueError("updates list cannot be empty")
+        return v
+
+
+class BatchAdjustmentsResponse(BaseModel):
+    """PATCH /api/v1/invoices/{id}/adjustments response"""
+
     invoice_id: int
-    line_item_id: int
-    actual_amount: Decimal
-    adjustments: Decimal
-    updated_at: datetime
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def billable_amount(self) -> Decimal:
-        return self.actual_amount + self.adjustments
+    updated: list[InvoiceLineItemResponse]

@@ -6,14 +6,15 @@ AsyncSession and return domain/DTO objects (often Pydantic schemas here).
 
 from .campaign_service import get_campaign_detail, list_campaigns
 from .errors import NotFoundError
-from .invoice_line_item_service import update_adjustments
+from .invoice_line_item_service import BatchUpdateError, batch_update_adjustments
 from .invoice_service import get_invoice_detail, list_invoices
 
 __all__ = [
+    "BatchUpdateError",
     "NotFoundError",
-    "list_campaigns",
+    "batch_update_adjustments",
     "get_campaign_detail",
-    "list_invoices",
     "get_invoice_detail",
-    "update_adjustments",
+    "list_campaigns",
+    "list_invoices",
 ]
