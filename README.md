@@ -30,6 +30,36 @@ A small full-stack app for managing publisher campaigns/orders and invoices (bil
 - Docker + Docker Compose
   - **Why:** One-command startup with consistent environments.
 
+## Database Schema
+
+```text
+┌──────────────┐       ┌──────────────┐
+│  campaigns   │       │   invoices   │
+├──────────────┤       ├──────────────┤
+│ id           │───1:1─│ id           │
+│ name         │       │ campaign_id  │
+└──────┬───────┘       └──────┬───────┘
+       │                      │
+       │ 1:N                  │ 1:N
+       ▼                      ▼
+┌──────────────┐       ┌────────────────────┐
+│  line_items  │       │ invoice_line_items │
+├──────────────┤       ├────────────────────┤
+│ id           │───1:N─│ id                 │
+│ campaign_id  │       │ invoice_id         │
+│ name         │       │ line_item_id       │
+│ booked_amount│       │ actual_amount      │
+└──────────────┘       │ adjustments        │
+                       └────────────────────┘
+```
+
+**Key relationships:**
+
+- Campaign ↔ Invoice: 1:1 (one invoice per campaign)
+- Campaign → LineItems: 1:N (campaign has many line items)
+- Invoice → InvoiceLineItems: 1:N (invoice has many billing entries)
+- LineItem → InvoiceLineItems: 1:N (line item can appear in multiple invoices)
+
 ## Run with Docker (recommended)
 
 Prerequisites: Docker Desktop.
@@ -70,6 +100,8 @@ You can also run these steps separately:
 - Web: <http://localhost:5173>
 - API: <http://localhost:8000>
   - Example endpoint: <http://localhost:8000/api/v1/hello>
+  - API Documentation (Swagger UI): <http://localhost:8000/docs>
+  - API Documentation (ReDoc): <http://localhost:8000/redoc>
 
 **Stop the application:**
 
