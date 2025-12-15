@@ -9,6 +9,7 @@ from .base import Base
 from .timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
+    from .comment import Comment
     from .invoice import Invoice
     from .line_item import LineItem
 
@@ -26,5 +27,9 @@ class Campaign(Base, TimestampMixin):
     invoice: Mapped[Invoice | None] = relationship(
         back_populates="campaign",
         uselist=False,
+        cascade="all, delete-orphan",
+    )
+    comments: Mapped[list[Comment]] = relationship(
+        back_populates="campaign",
         cascade="all, delete-orphan",
     )

@@ -14,7 +14,36 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tqdm import tqdm
 
 from .db import get_session_maker
-from .models import Campaign, Invoice, InvoiceLineItem, LineItem
+from .models import Campaign, Invoice, InvoiceLineItem, LineItem, User
+
+# Default seed users
+SEED_USERS = [
+    {"username": "alice", "email": "alice@example.com"},
+    {"username": "bob", "email": "bob@example.com"},
+    {"username": "charlie", "email": "charlie@example.com"},
+]
+
+
+async def get_or_create_user(session: AsyncSession, username: str, email: str) -> User:
+    """Get or create a User by username.
+
+    Args:
+        session: Database session
+        username: Username
+        email: Email address
+
+    Returns:
+        User instance
+    """
+    result = await session.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        user = User(username=username, email=email, is_active=True)
+        session.add(user)
+        await session.flush()
+
+    return user
 
 
 def parse_decimal(value: float | str) -> Decimal:
@@ -184,6 +213,12 @@ async def import_seed_data(
     # Get async session
     session_maker = get_session_maker()
     async with session_maker() as session:
+        # Create seed users first
+        users_processed = 0
+        for user_data in SEED_USERS:
+            await get_or_create_user(session, user_data["username"], user_data["email"])
+            users_processed += 1
+
         campaigns_processed = set()
         line_items_processed = 0
         invoices_processed = set()
@@ -228,6 +263,7 @@ async def import_seed_data(
         await session.commit()
 
         return {
+            "users": users_processed,
             "campaigns": len(campaigns_processed),
             "line_items": line_items_processed,
             "invoices": len(invoices_processed),
@@ -240,6 +276,7 @@ async def main():
     print("Starting seed data import...")
     counts = await import_seed_data()
     print("✅ Seed import completed:")
+    print(f"   Users: {counts['users']}")
     print(f"   Campaigns: {counts['campaigns']}")
     print(f"   Line items: {counts['line_items']}")
     print(f"   Invoices: {counts['invoices']}")

@@ -10,3 +10,12 @@ class NotFoundError(Exception):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.resource} not found: {self.identifier}"
+
+
+@dataclass(frozen=True, slots=True)
+class ForbiddenError(Exception):
+    action: str
+    resource: str
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Not allowed to {self.action} this {self.resource}"
