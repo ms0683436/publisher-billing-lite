@@ -4,6 +4,7 @@ Services should not contain FastAPI routing concerns; they operate on
 AsyncSession and return domain/DTO objects (often Pydantic schemas here).
 """
 
+from . import comment_service
 from .campaign_service import get_campaign_detail, list_campaigns
 from .errors import ForbiddenError, NotFoundError
 from .invoice_line_item_service import BatchUpdateError, batch_update_adjustments
@@ -12,9 +13,10 @@ from .user_service import get_user_detail, list_users, search_users
 
 __all__ = [
     "BatchUpdateError",
-    "NotFoundError",
     "ForbiddenError",
+    "NotFoundError",
     "batch_update_adjustments",
+    "comment_service",
     "get_campaign_detail",
     "get_invoice_detail",
     "get_user_detail",

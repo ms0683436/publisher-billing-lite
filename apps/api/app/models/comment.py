@@ -20,7 +20,7 @@ class Comment(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Campaign relationship (only Campaign supported)
+    # Campaign relationship
     campaign_id: Mapped[int] = mapped_column(
         ForeignKey("campaigns.id", ondelete="CASCADE"),
         nullable=False,
