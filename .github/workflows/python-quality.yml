@@ -29,9 +29,9 @@ jobs:
         working-directory: apps/api
         run: uv sync --frozen --group dev
 
-      - name: Black (check)
+      - name: Ruff format (check)
         working-directory: apps/api
-        run: uv run black --check app
+        run: uv run ruff format --check .
 
       - name: Ruff
         working-directory: apps/api
