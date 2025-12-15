@@ -117,7 +117,7 @@ make lint-api        # Ruff + Mypy for Python
 make lint-web        # ESLint for TypeScript
 
 make format          # Format all code
-make format-api      # Black for Python
+make format-api      # Ruff format for Python
 make format-check    # Check formatting without changes
 ```
 

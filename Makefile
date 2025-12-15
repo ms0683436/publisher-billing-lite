@@ -1,4 +1,4 @@
-.PHONY: help up down web-install migrate migration-generate migration-downgrade migration-current migration-history db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-web format format-api format-check
+.PHONY: help up down web-install migrate migration-generate migration-downgrade migration-current migration-history db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
 
 help:
 	@echo "Available commands:"
@@ -23,9 +23,10 @@ help:
 	@echo "Linting / Formatting:"
 	@echo "  make lint                 - Run all linters (API + Web)"
 	@echo "  make lint-api             - Run Ruff + Mypy (Python)"
+	@echo "  make lint-api-fix         - Auto-fix + format Python via Ruff"
 	@echo "  make lint-web             - Run ESLint (TypeScript)"
 	@echo "  make format               - Format all code"
-	@echo "  make format-api           - Run Black (Python)"
+	@echo "  make format-api           - Run Ruff format (Python)"
 	@echo "  make format-check         - Check formatting without changes"
 
 # Start all services (create .env if needed)
@@ -140,6 +141,12 @@ lint-api:
 	docker compose exec api uv run mypy app
 	@echo "✅ Python linting passed!"
 
+lint-api-fix:
+	@echo "🧹 Auto-fixing + formatting Python (Ruff)..."
+	docker compose exec api uv run ruff check --fix .
+	docker compose exec api uv run ruff format .
+	@echo "✅ Ruff fix + format complete!"
+
 lint-web:
 	@echo "🔍 Running TypeScript linter..."
 	docker compose exec web pnpm lint
@@ -150,10 +157,10 @@ format: format-api
 
 format-api:
 	@echo "🎨 Formatting Python code..."
-	docker compose exec api uv run black app
+	docker compose exec api uv run ruff format .
 	@echo "✅ Python formatting complete!"
 
 format-check:
 	@echo "🔍 Checking Python formatting..."
-	docker compose exec api uv run black --check app
+	docker compose exec api uv run ruff format --check .
 	@echo "✅ Python formatting check passed!"

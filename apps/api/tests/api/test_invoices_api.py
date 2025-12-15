@@ -199,7 +199,9 @@ class TestPatchInvoiceAdjustments:
         # 10.125 rounds to 10.13 with HALF_UP
         assert response.json()["updated"][0]["adjustments"] == "10.13"
 
-    async def test_batch_update_empty_list_rejected(self, client, make_campaign, make_invoice):
+    async def test_batch_update_empty_list_rejected(
+        self, client, make_campaign, make_invoice
+    ):
         """Should reject empty updates list."""
         campaign = await make_campaign(name="Test Campaign")
         invoice = await make_invoice(campaign)

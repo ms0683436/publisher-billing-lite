@@ -1,9 +1,9 @@
 repos:
   - repo: local
     hooks:
-      - id: api-black
-        name: black (apps/api)
-        entry: uv run --project apps/api black apps/api/app
+      - id: api-ruff-format
+        name: ruff format (apps/api)
+        entry: uv run --project apps/api ruff format .
         language: system
         pass_filenames: false
 
