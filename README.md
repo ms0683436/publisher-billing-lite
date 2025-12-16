@@ -2,6 +2,12 @@
 
 A small full-stack app for managing publisher campaigns/orders and invoices (billing adjustments).
 
+## Features
+
+- **Authentication** - JWT-based login with access token (15min) and refresh token (7 days, HttpOnly cookie). Auto-refresh on 401.
+- **Campaigns & Invoices** - Manage publisher campaigns with line items and billing adjustments.
+- **Comments** - Campaign comments with @mention support (↑/↓ navigate, Tab/Enter select, Esc close).
+
 ## Repo Conventions
 
 - Commit message guidelines: see [docs/commit-message-guidelines.md](docs/commit-message-guidelines.md)
@@ -108,16 +114,6 @@ You can also run these steps separately:
 ```bash
 make down
 ```
-
-## Comments Feature
-
-The app includes a commenting system on campaign detail pages with @mention support.
-
-**@mention keyboard shortcuts:**
-
-- `↑` / `↓` - Navigate through user suggestions
-- `Tab` or `Enter` - Select the highlighted user
-- `Esc` - Close the suggestion dropdown
 
 ## Linting / formatting
 
