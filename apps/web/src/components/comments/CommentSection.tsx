@@ -1,6 +1,6 @@
 import { Box, Typography, Alert, CircularProgress } from "@mui/material";
 import { useComments } from "../../hooks/useComments";
-import { useCurrentUser } from "../../hooks/useCurrentUser";
+import { useAuth } from "../../hooks/useAuth";
 import { CommentForm } from "./CommentForm";
 import { CommentList } from "./CommentList";
 
@@ -9,7 +9,7 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ campaignId }: CommentSectionProps) {
-  const { currentUser } = useCurrentUser();
+  const { user } = useAuth();
   const {
     comments,
     total,
@@ -21,23 +21,23 @@ export function CommentSection({ campaignId }: CommentSectionProps) {
   } = useComments(campaignId);
 
   const handleAddComment = async (content: string) => {
-    if (!currentUser) return;
-    await addComment(content, currentUser.id);
+    if (!user) return;
+    await addComment(content, user.id);
   };
 
   const handleReply = async (content: string, parentId: number) => {
-    if (!currentUser) return;
-    await addComment(content, currentUser.id, parentId);
+    if (!user) return;
+    await addComment(content, user.id, parentId);
   };
 
   const handleEdit = async (commentId: number, content: string) => {
-    if (!currentUser) return;
-    await editComment(commentId, content, currentUser.id);
+    if (!user) return;
+    await editComment(commentId, content, user.id);
   };
 
   const handleDelete = async (commentId: number, parentId: number | null) => {
-    if (!currentUser) return;
-    await removeComment(commentId, currentUser.id, parentId);
+    if (!user) return;
+    await removeComment(commentId, user.id, parentId);
   };
 
   if (loading) {
@@ -62,21 +62,15 @@ export function CommentSection({ campaignId }: CommentSectionProps) {
         Comments ({total})
       </Typography>
 
-      {!currentUser && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Select a user from the header to post comments.
-        </Alert>
-      )}
-
       <CommentList
         comments={comments}
-        currentUserId={currentUser?.id ?? null}
+        currentUserId={user?.id ?? null}
         onReply={handleReply}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
 
-      {currentUser && (
+      {user && (
         <Box sx={{ mt: 3 }}>
           <CommentForm onSubmit={handleAddComment} />
         </Box>
