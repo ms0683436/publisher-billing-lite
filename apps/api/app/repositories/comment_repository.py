@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -145,16 +146,43 @@ async def update_comment(
     """
     comment.content = content
 
-    # Clear existing mentions and create new ones
-    for mention in list(comment.mentions):
-        await session.delete(mention)
+    # Diff-based mention sync:
+    # - avoid async lazy-load of `comment.mentions` (can raise MissingGreenlet)
+    # - preserve existing mention rows (timestamps) when mentions are unchanged
+    desired_ids = list(dict.fromkeys(mentioned_user_ids or []))
+    desired_set = set(desired_ids)
 
-    if mentioned_user_ids:
-        for user_id in mentioned_user_ids:
-            mention = CommentMention(comment_id=comment.id, user_id=user_id)
-            session.add(mention)
+    existing_rows = await session.execute(
+        select(CommentMention.user_id).where(CommentMention.comment_id == comment.id)
+    )
+    existing_set = set(existing_rows.scalars().all())
+
+    to_delete = existing_set - desired_set
+    to_add = [user_id for user_id in desired_ids if user_id not in existing_set]
+
+    if to_delete:
+        await session.execute(
+            delete(CommentMention).where(
+                CommentMention.comment_id == comment.id,
+                CommentMention.user_id.in_(to_delete),
+            )
+        )
+
+    if to_add:
+        stmt = (
+            insert(CommentMention)
+            .values(
+                [{"comment_id": comment.id, "user_id": user_id} for user_id in to_add]
+            )
+            .on_conflict_do_nothing(index_elements=["comment_id", "user_id"])
+        )
+        await session.execute(stmt)
 
     await session.flush()
+
+    # We used bulk/core operations above; expire the relationship so the
+    # subsequent get_comment(selectinload(...)) reflects the latest rows.
+    session.expire(comment, ["mentions"])
 
     # Reload with relationships (comment exists since we just updated it)
     result = await get_comment(session, comment.id)

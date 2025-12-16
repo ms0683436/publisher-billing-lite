@@ -9,7 +9,16 @@ from decimal import Decimal
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from app.models import Base, Campaign, Invoice, InvoiceLineItem, LineItem
+from app.models import (
+    Base,
+    Campaign,
+    Comment,
+    CommentMention,
+    Invoice,
+    InvoiceLineItem,
+    LineItem,
+    User,
+)
 
 # Use TEST_DATABASE_URL or fall back to default test database
 TEST_DATABASE_URL = os.getenv(
@@ -129,3 +138,69 @@ def make_invoice_line_item(session: AsyncSession):
         return invoice_line_item
 
     return _make_invoice_line_item
+
+
+@pytest.fixture
+def make_user(session: AsyncSession):
+    """Factory fixture to create User instances."""
+    _counter = [0]
+
+    async def _make_user(
+        username: str | None = None,
+        email: str | None = None,
+        is_active: bool = True,
+    ) -> User:
+        _counter[0] += 1
+        if username is None:
+            username = f"user{_counter[0]}"
+        if email is None:
+            email = f"{username}@example.com"
+
+        user = User(username=username, email=email, is_active=is_active)
+        session.add(user)
+        await session.flush()
+        await session.refresh(user)
+        return user
+
+    return _make_user
+
+
+@pytest.fixture
+def make_comment(session: AsyncSession):
+    """Factory fixture to create Comment instances."""
+
+    async def _make_comment(
+        campaign: Campaign,
+        author: User,
+        content: str = "Test comment",
+        parent: Comment | None = None,
+    ) -> Comment:
+        comment = Comment(
+            content=content,
+            campaign_id=campaign.id,
+            author_id=author.id,
+            parent_id=parent.id if parent else None,
+        )
+        session.add(comment)
+        await session.flush()
+        await session.refresh(comment)
+        return comment
+
+    return _make_comment
+
+
+@pytest.fixture
+def make_comment_mention(session: AsyncSession):
+    """Factory fixture to create CommentMention instances."""
+
+    async def _make_comment_mention(
+        comment: Comment,
+        user: User,
+    ) -> CommentMention:
+        mention = CommentMention(comment_id=comment.id, user_id=user.id)
+        session.add(mention)
+        await session.flush()
+        await session.refresh(mention)
+        return mention
+
+    return _make_comment_mention
