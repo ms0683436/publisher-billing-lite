@@ -4,16 +4,22 @@ from __future__ import annotations
 
 
 class TestListUsers:
-    """Tests for GET /api/v1/users."""
+    """Tests for GET /api/v1/users.
+
+    Note: The client fixture creates a default_test_user for authentication,
+    so there's always at least 1 user in the database.
+    """
 
     async def test_list_users_empty(self, client):
-        """Returns empty list when no users exist."""
+        """Returns only the default auth user when no other users exist."""
         response = await client.get("/api/v1/users")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["users"] == []
-        assert data["total"] == 0
+        # The client fixture creates default_test_user for authentication
+        assert data["total"] == 1
+        assert len(data["users"]) == 1
+        assert data["users"][0]["username"] == "default_test_user"
 
     async def test_list_users_with_data(self, client, make_user):
         """Returns users with correct data."""
@@ -24,8 +30,9 @@ class TestListUsers:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["total"] == 2
-        assert len(data["users"]) == 2
+        # +1 for default_test_user from client fixture
+        assert data["total"] == 3
+        assert len(data["users"]) == 3
         usernames = [u["username"] for u in data["users"]]
         assert "alice" in usernames
         assert "bob" in usernames
@@ -39,10 +46,13 @@ class TestListUsers:
 
         assert response.status_code == 200
         data = response.json()
-        # total counts all, but users list only active
-        assert data["total"] == 2
-        assert len(data["users"]) == 1
-        assert data["users"][0]["username"] == "active"
+        # +1 for default_test_user from client fixture
+        # total counts all users (3), but users list only shows active (2)
+        assert data["total"] == 3
+        assert len(data["users"]) == 2
+        usernames = [u["username"] for u in data["users"]]
+        assert "active" in usernames
+        assert "inactive" not in usernames
 
     async def test_list_users_pagination(self, client, make_user):
         """Respects pagination parameters."""
@@ -53,7 +63,8 @@ class TestListUsers:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["total"] == 5
+        # +1 for default_test_user from client fixture
+        assert data["total"] == 6
         assert len(data["users"]) == 2
 
 

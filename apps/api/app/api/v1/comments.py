@@ -1,8 +1,8 @@
 """Comment API routes."""
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, HTTPException
 
-from ...api.deps import PaginationDep, SessionDep
+from ...api.deps import CurrentUserDep, PaginationDep, SessionDep
 from ...schemas.comment import (
     CommentCreate,
     CommentListResponse,
@@ -19,6 +19,7 @@ async def list_campaign_comments(
     campaign_id: int,
     session: SessionDep,
     pagination: PaginationDep,
+    current_user: CurrentUserDep,
 ):
     """List comments for a campaign with nested replies."""
     try:
@@ -33,15 +34,12 @@ async def list_campaign_comments(
 async def create_comment(
     data: CommentCreate,
     session: SessionDep,
-    x_user_id: int = Header(..., description="Current user ID"),
+    current_user: CurrentUserDep,
 ):
-    """Create a new comment or reply.
-
-    Requires X-User-Id header to identify the author.
-    """
+    """Create a new comment or reply."""
     try:
         return await comment_service.create_comment(
-            session, data=data, author_id=x_user_id
+            session, data=data, author_id=current_user.id
         )
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -54,7 +52,7 @@ async def update_comment(
     comment_id: int,
     data: CommentUpdate,
     session: SessionDep,
-    x_user_id: int = Header(..., description="Current user ID"),
+    current_user: CurrentUserDep,
 ):
     """Update a comment (author only)."""
     try:
@@ -62,7 +60,7 @@ async def update_comment(
             session,
             comment_id=comment_id,
             content=data.content,
-            current_user_id=x_user_id,
+            current_user_id=current_user.id,
         )
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -74,12 +72,12 @@ async def update_comment(
 async def delete_comment(
     comment_id: int,
     session: SessionDep,
-    x_user_id: int = Header(..., description="Current user ID"),
+    current_user: CurrentUserDep,
 ):
     """Delete a comment (author only, cascades to replies)."""
     try:
         await comment_service.delete_comment(
-            session, comment_id=comment_id, current_user_id=x_user_id
+            session, comment_id=comment_id, current_user_id=current_user.id
         )
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

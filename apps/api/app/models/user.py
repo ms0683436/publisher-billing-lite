@@ -20,6 +20,7 @@ class User(Base, TimestampMixin):
         String(50), unique=True, nullable=False, index=True
     )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     comments: Mapped[list[Comment]] = relationship(

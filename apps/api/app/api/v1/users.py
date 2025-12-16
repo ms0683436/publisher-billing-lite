@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from ...api.deps import PaginationDep, SessionDep
+from ...api.deps import CurrentUserDep, PaginationDep, SessionDep
 from ...schemas.user import UserDetail, UserListResponse
 from ...services import NotFoundError, user_service
 
@@ -8,7 +8,11 @@ router = APIRouter(tags=["users"])
 
 
 @router.get("/users", response_model=UserListResponse)
-async def list_users(session: SessionDep, pagination: PaginationDep):
+async def list_users(
+    session: SessionDep,
+    pagination: PaginationDep,
+    current_user: CurrentUserDep,
+):
     """List all active users."""
     return await user_service.list_users(session, pagination=pagination)
 
@@ -16,6 +20,7 @@ async def list_users(session: SessionDep, pagination: PaginationDep):
 @router.get("/users/search", response_model=UserListResponse)
 async def search_users(
     session: SessionDep,
+    current_user: CurrentUserDep,
     q: str = Query(..., min_length=1, description="Search query for username"),
 ):
     """Search users by username (for @mention autocomplete)."""
@@ -23,7 +28,11 @@ async def search_users(
 
 
 @router.get("/users/{user_id}", response_model=UserDetail)
-async def get_user(user_id: int, session: SessionDep):
+async def get_user(
+    user_id: int,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+):
     """Get user details by ID."""
     try:
         return await user_service.get_user_detail(session, user_id=user_id)

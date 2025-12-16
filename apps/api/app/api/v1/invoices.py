@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from ...api.deps import PaginationDep, SessionDep
+from ...api.deps import CurrentUserDep, PaginationDep, SessionDep
 from ...schemas.invoice import InvoiceDetail, InvoiceListResponse
 from ...schemas.invoice_line_item import (
     BatchAdjustmentsResponse,
@@ -17,12 +17,20 @@ router = APIRouter(tags=["invoices"])
 
 
 @router.get("/invoices", response_model=InvoiceListResponse)
-async def list_invoices(session: SessionDep, pagination: PaginationDep):
+async def list_invoices(
+    session: SessionDep,
+    pagination: PaginationDep,
+    current_user: CurrentUserDep,
+):
     return await invoice_service.list_invoices(session, pagination=pagination)
 
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceDetail)
-async def get_invoice(invoice_id: int, session: SessionDep):
+async def get_invoice(
+    invoice_id: int,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+):
     try:
         return await invoice_service.get_invoice_detail(session, invoice_id=invoice_id)
     except NotFoundError as exc:
@@ -36,6 +44,7 @@ async def patch_invoice_adjustments(
     invoice_id: int,
     payload: BatchAdjustmentsUpdate,
     session: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Batch update adjustments for multiple line items in an invoice."""
     try:

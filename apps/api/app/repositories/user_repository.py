@@ -53,6 +53,20 @@ async def get_user(session: AsyncSession, user_id: int) -> User | None:
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+async def get_user_by_username(session: AsyncSession, username: str) -> User | None:
+    """Get user by username (case-insensitive).
+
+    Args:
+        session: Database session
+        username: Username to look up
+
+    Returns:
+        User instance or None if not found
+    """
+    stmt = select(User).where(func.lower(User.username) == username.lower())
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def search_users(
     session: AsyncSession,
     query: str,

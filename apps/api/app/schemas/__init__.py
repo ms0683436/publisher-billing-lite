@@ -1,3 +1,8 @@
+from .auth import (
+    AuthUser,
+    LoginRequest,
+    TokenResponse,
+)
 from .campaign import (
     CampaignBase,
     CampaignDetail,
@@ -24,6 +29,10 @@ from .line_item import (
 )
 
 __all__ = [
+    # Auth
+    "AuthUser",
+    "LoginRequest",
+    "TokenResponse",
     # Campaign
     "CampaignBase",
     "CampaignDetail",

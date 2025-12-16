@@ -15,22 +15,27 @@ from tqdm import tqdm
 
 from .db import get_session_maker
 from .models import Campaign, Invoice, InvoiceLineItem, LineItem, User
-
-# Default seed users
-SEED_USERS = [
-    {"username": "alice", "email": "alice@example.com"},
-    {"username": "bob", "email": "bob@example.com"},
-    {"username": "charlie", "email": "charlie@example.com"},
-]
+from .services.auth_service import get_password_hash
 
 
-async def get_or_create_user(session: AsyncSession, username: str, email: str) -> User:
+def load_seed_users() -> list[dict[str, str]]:
+    """Load seed users from users.json."""
+    app_dir = Path(__file__).parent
+    users_path = app_dir / "seeds" / "users.json"
+    with open(users_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+async def get_or_create_user(
+    session: AsyncSession, username: str, email: str, password: str
+) -> User:
     """Get or create a User by username.
 
     Args:
         session: Database session
         username: Username
         email: Email address
+        password: Plain text password (will be hashed)
 
     Returns:
         User instance
@@ -39,7 +44,10 @@ async def get_or_create_user(session: AsyncSession, username: str, email: str) -
     user = result.scalar_one_or_none()
 
     if not user:
-        user = User(username=username, email=email, is_active=True)
+        password_hash = get_password_hash(password)
+        user = User(
+            username=username, email=email, is_active=True, password_hash=password_hash
+        )
         session.add(user)
         await session.flush()
 
@@ -214,9 +222,15 @@ async def import_seed_data(
     session_maker = get_session_maker()
     async with session_maker() as session:
         # Create seed users first
+        seed_users = load_seed_users()
         users_processed = 0
-        for user_data in SEED_USERS:
-            await get_or_create_user(session, user_data["username"], user_data["email"])
+        for user_data in seed_users:
+            await get_or_create_user(
+                session,
+                user_data["username"],
+                user_data["email"],
+                user_data["password"],
+            )
             users_processed += 1
 
         campaigns_processed = set()

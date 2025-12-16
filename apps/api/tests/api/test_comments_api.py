@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from tests.api.conftest import auth_headers_for_user
+
 
 class TestListCampaignComments:
     """Tests for GET /api/v1/campaigns/{campaign_id}/comments."""
@@ -105,7 +107,7 @@ class TestCreateComment:
         response = await client.post(
             "/api/v1/comments",
             json={"content": "New comment", "campaign_id": campaign.id},
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 201
@@ -127,7 +129,7 @@ class TestCreateComment:
                 "campaign_id": campaign.id,
                 "parent_id": parent.id,
             },
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 201
@@ -138,7 +140,7 @@ class TestCreateComment:
         """Creates comment and parses @mentions."""
         campaign = await make_campaign()
         author = await make_user(username="author")
-        mentioned = await make_user(username="bob")
+        await make_user(username="bob")
 
         response = await client.post(
             "/api/v1/comments",
@@ -146,7 +148,7 @@ class TestCreateComment:
                 "content": "Hey @bob, check this out",
                 "campaign_id": campaign.id,
             },
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 201
@@ -154,25 +156,24 @@ class TestCreateComment:
         assert len(data["mentions"]) == 1
         assert data["mentions"][0]["username"] == "bob"
 
-    async def test_create_comment_requires_user_header(self, client, make_campaign):
-        """Returns 422 when X-User-Id header is missing."""
+    async def test_create_comment_requires_authentication(
+        self, unauthenticated_client, make_campaign
+    ):
+        """Returns 401 when not authenticated."""
         campaign = await make_campaign()
 
-        response = await client.post(
+        response = await unauthenticated_client.post(
             "/api/v1/comments",
             json={"content": "Test", "campaign_id": campaign.id},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 401
 
-    async def test_create_comment_campaign_not_found(self, client, make_user):
+    async def test_create_comment_campaign_not_found(self, client):
         """Returns 404 for non-existent campaign."""
-        author = await make_user()
-
         response = await client.post(
             "/api/v1/comments",
             json={"content": "Test", "campaign_id": 99999},
-            headers={"X-User-Id": str(author.id)},
         )
 
         assert response.status_code == 404
@@ -193,7 +194,7 @@ class TestCreateComment:
                 "campaign_id": campaign.id,
                 "parent_id": reply.id,
             },
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 403
@@ -213,7 +214,7 @@ class TestUpdateComment:
         response = await client.put(
             f"/api/v1/comments/{comment.id}",
             json={"content": "Updated content"},
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 200
@@ -227,7 +228,7 @@ class TestUpdateComment:
         campaign = await make_campaign()
         author = await make_user(username="author")
         await make_user(username="alice")
-        bob = await make_user(username="bob")
+        await make_user(username="bob")
         comment = await make_comment(campaign, author, content="Hey @alice")
 
         # Verify bob can be found via search API
@@ -238,7 +239,7 @@ class TestUpdateComment:
         response = await client.put(
             f"/api/v1/comments/{comment.id}",
             json={"content": "Now mentioning @bob"},
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         print(f"Update response: {response.json()}")
@@ -259,7 +260,7 @@ class TestUpdateComment:
         response = await client.put(
             f"/api/v1/comments/{comment.id}",
             json={"content": "Edited text but still @alice"},
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 200
@@ -279,37 +280,34 @@ class TestUpdateComment:
         response = await client.put(
             f"/api/v1/comments/{comment.id}",
             json={"content": "Hacked!"},
-            headers={"X-User-Id": str(other.id)},
+            headers=auth_headers_for_user(other),
         )
 
         assert response.status_code == 403
 
-    async def test_update_comment_not_found(self, client, make_user):
+    async def test_update_comment_not_found(self, client):
         """Returns 404 for non-existent comment."""
-        user = await make_user()
-
         response = await client.put(
             "/api/v1/comments/99999",
             json={"content": "Test"},
-            headers={"X-User-Id": str(user.id)},
         )
 
         assert response.status_code == 404
 
-    async def test_update_comment_requires_user_header(
-        self, client, make_campaign, make_user, make_comment
+    async def test_update_comment_requires_authentication(
+        self, unauthenticated_client, make_campaign, make_user, make_comment
     ):
-        """Returns 422 when X-User-Id header is missing."""
+        """Returns 401 when not authenticated."""
         campaign = await make_campaign()
         author = await make_user()
         comment = await make_comment(campaign, author)
 
-        response = await client.put(
+        response = await unauthenticated_client.put(
             f"/api/v1/comments/{comment.id}",
             json={"content": "Test"},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 401
 
 
 class TestDeleteComment:
@@ -325,7 +323,7 @@ class TestDeleteComment:
 
         response = await client.delete(
             f"/api/v1/comments/{comment.id}",
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 204
@@ -345,7 +343,7 @@ class TestDeleteComment:
 
         response = await client.delete(
             f"/api/v1/comments/{parent.id}",
-            headers={"X-User-Id": str(author.id)},
+            headers=auth_headers_for_user(author),
         )
 
         assert response.status_code == 204
@@ -365,30 +363,25 @@ class TestDeleteComment:
 
         response = await client.delete(
             f"/api/v1/comments/{comment.id}",
-            headers={"X-User-Id": str(other.id)},
+            headers=auth_headers_for_user(other),
         )
 
         assert response.status_code == 403
 
-    async def test_delete_comment_not_found(self, client, make_user):
+    async def test_delete_comment_not_found(self, client):
         """Returns 404 for non-existent comment."""
-        user = await make_user()
-
-        response = await client.delete(
-            "/api/v1/comments/99999",
-            headers={"X-User-Id": str(user.id)},
-        )
+        response = await client.delete("/api/v1/comments/99999")
 
         assert response.status_code == 404
 
-    async def test_delete_comment_requires_user_header(
-        self, client, make_campaign, make_user, make_comment
+    async def test_delete_comment_requires_authentication(
+        self, unauthenticated_client, make_campaign, make_user, make_comment
     ):
-        """Returns 422 when X-User-Id header is missing."""
+        """Returns 401 when not authenticated."""
         campaign = await make_campaign()
         author = await make_user()
         comment = await make_comment(campaign, author)
 
-        response = await client.delete(f"/api/v1/comments/{comment.id}")
+        response = await unauthenticated_client.delete(f"/api/v1/comments/{comment.id}")
 
-        assert response.status_code == 422
+        assert response.status_code == 401

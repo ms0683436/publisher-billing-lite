@@ -20,6 +20,12 @@ from app.models import (
     User,
 )
 
+# Pre-computed bcrypt hash for "password123" (avoids import issues at module load)
+# Generated with: get_password_hash("password123")
+DEFAULT_TEST_PASSWORD_HASH = (
+    "$2b$12$4/jYBe2FhZ1HQJZhqhQ11uHTwscvdsd2XeIqv7rCJmmtTE4FcrPF."
+)
+
 # Use TEST_DATABASE_URL or fall back to default test database
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
@@ -149,14 +155,22 @@ def make_user(session: AsyncSession):
         username: str | None = None,
         email: str | None = None,
         is_active: bool = True,
+        password_hash: str | None = None,
     ) -> User:
         _counter[0] += 1
         if username is None:
             username = f"user{_counter[0]}"
         if email is None:
             email = f"{username}@example.com"
+        if password_hash is None:
+            password_hash = DEFAULT_TEST_PASSWORD_HASH
 
-        user = User(username=username, email=email, is_active=is_active)
+        user = User(
+            username=username,
+            email=email,
+            is_active=is_active,
+            password_hash=password_hash,
+        )
         session.add(user)
         await session.flush()
         await session.refresh(user)
