@@ -43,7 +43,7 @@ async def list_comments_for_campaign(
             .selectinload(Comment.mentions)
             .selectinload(CommentMention.user),
         )
-        .order_by(Comment.created_at.desc())
+        .order_by(Comment.created_at.asc())
         .limit(limit)
         .offset(offset)
     )

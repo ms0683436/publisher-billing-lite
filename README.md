@@ -109,6 +109,16 @@ You can also run these steps separately:
 make down
 ```
 
+## Comments Feature
+
+The app includes a commenting system on campaign detail pages with @mention support.
+
+**@mention keyboard shortcuts:**
+
+- `↑` / `↓` - Navigate through user suggestions
+- `Tab` or `Enter` - Select the highlighted user
+- `Esc` - Close the suggestion dropdown
+
 ## Linting / formatting
 
 ```bash

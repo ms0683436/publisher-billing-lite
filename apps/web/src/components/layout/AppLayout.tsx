@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { Box, AppBar, Toolbar, Typography } from "@mui/material";
 import { Navigation } from "./Navigation";
+import { UserSelector } from "../common/UserSelector";
 
 export function AppLayout() {
   return (
@@ -11,6 +12,8 @@ export function AppLayout() {
             Publisher Billing
           </Typography>
           <Navigation />
+          <Box sx={{ flexGrow: 1 }} />
+          <UserSelector />
         </Toolbar>
       </AppBar>
       <Box component="main" sx={{ mt: 4, mb: 4, mx: 4, flex: 1 }}>

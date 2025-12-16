@@ -16,10 +16,12 @@ import {
   CardContent,
   Grid,
   Chip,
+  Divider,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useCampaign } from "../hooks/useCampaign";
 import { MoneyDisplay } from "../components/common/MoneyDisplay";
+import { CommentSection } from "../components/comments";
 
 export function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +147,10 @@ export function CampaignDetailPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Divider sx={{ my: 4 }} />
+
+      <CommentSection campaignId={Number(id)} />
     </>
   );
 }
