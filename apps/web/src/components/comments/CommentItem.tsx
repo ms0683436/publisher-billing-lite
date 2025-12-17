@@ -7,6 +7,7 @@ import {
 } from "@mui/icons-material";
 import type { Comment } from "../../types/comment";
 import { CommentForm } from "./CommentForm";
+import { formatRelativeTime, formatFullDate } from "../../utils/date";
 
 interface CommentItemProps {
   comment: Comment;
@@ -15,11 +16,6 @@ interface CommentItemProps {
   onReply?: (content: string, parentId: number) => Promise<void>;
   onEdit: (commentId: number, content: string) => Promise<void>;
   onDelete: (commentId: number, parentId: number | null) => Promise<void>;
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleString();
 }
 
 export function CommentItem({
@@ -86,10 +82,16 @@ export function CommentItem({
             <Typography variant="subtitle2" fontWeight={600}>
               @{comment.author.username}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {formatDate(comment.created_at)}
-              {comment.updated_at !== comment.created_at && " (edited)"}
-            </Typography>
+            <Tooltip title={formatFullDate(comment.created_at)} arrow>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ cursor: "default" }}
+              >
+                {formatRelativeTime(comment.created_at)}
+                {comment.updated_at !== comment.created_at && " (edited)"}
+              </Typography>
+            </Tooltip>
           </Box>
 
           {isEditing ? (

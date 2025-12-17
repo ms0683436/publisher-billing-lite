@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from pydantic import BaseModel, ConfigDict, field_serializer
@@ -19,6 +19,17 @@ class TimestampMixin(BaseModel):
 
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer("created_at", "updated_at", when_used="json")
+    def serialize_datetime_as_utc(self, value: datetime) -> str:
+        """Serialize datetime as UTC with explicit timezone for unambiguous parsing"""
+        if value.tzinfo is None:
+            # Naive datetime from DB assumed to be UTC (PostgreSQL now() in UTC container)
+            value = value.replace(tzinfo=UTC)
+        else:
+            # Convert any timezone-aware datetime to UTC
+            value = value.astimezone(UTC)
+        return value.isoformat()
 
 
 class MoneySerializerMixin:
