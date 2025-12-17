@@ -98,7 +98,7 @@ async def list_history_for_entity(
             ChangeHistory.entity_id == entity_id,
         )
         .options(selectinload(ChangeHistory.changed_by))
-        .order_by(ChangeHistory.created_at.desc())
+        .order_by(ChangeHistory.created_at.desc(), ChangeHistory.id.desc())
         .limit(limit)
         .offset(offset)
     )
@@ -132,7 +132,7 @@ async def list_history_for_entities(
             ChangeHistory.entity_id.in_(entity_ids),
         )
         .options(selectinload(ChangeHistory.changed_by))
-        .order_by(ChangeHistory.created_at.desc())
+        .order_by(ChangeHistory.created_at.desc(), ChangeHistory.id.desc())
         .limit(limit)
     )
     return list((await session.execute(stmt)).scalars().all())

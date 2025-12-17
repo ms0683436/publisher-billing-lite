@@ -7,6 +7,7 @@ A small full-stack app for managing publisher campaigns/orders and invoices (bil
 - **Authentication** - JWT-based login with access token (15min) and refresh token (7 days, HttpOnly cookie). Auto-refresh on 401.
 - **Campaigns & Invoices** - Manage publisher campaigns with line items and billing adjustments.
 - **Comments** - Campaign comments with @mention support (↑/↓ navigate, Tab/Enter select, Esc close).
+- **Change History** - Audit trail for editable fields (adjustments, comments). View timeline with old→new values, editor, and timestamp.
 
 ## Repo Conventions
 
@@ -128,6 +129,25 @@ make format-check    # Check formatting without changes
 ```
 
 > Note: Requires services to be running (`make up`)
+
+## Testing
+
+Run tests via Docker (recommended):
+
+```bash
+make test
+```
+
+Other useful targets:
+
+```bash
+make test-api         # API tests only
+make test-unit        # unit tests only
+make test-integration # integration tests only
+make test-cov         # coverage
+```
+
+> Note: `make test` expects `.env` to define `DATABASE_URL` and `TEST_DATABASE_URL` (see `.env.example`).
 
 To enforce these checks locally on commit:
 
