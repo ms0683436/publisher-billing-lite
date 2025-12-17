@@ -4,3 +4,4 @@ export * from "./invoice";
 export * from "./user";
 export * from "./comment";
 export * from "./auth";
+export * from "./history";

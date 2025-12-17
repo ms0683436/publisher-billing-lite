@@ -6,3 +6,4 @@ export * from "./useBatchUpdateAdjustments";
 export * from "./useAuth";
 export * from "./useComments";
 export * from "./useUserSearch";
+export * from "./useChangeHistory";

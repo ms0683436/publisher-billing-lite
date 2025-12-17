@@ -18,14 +18,18 @@ import {
   Grid,
   TextField,
   Snackbar,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
+import HistoryIcon from "@mui/icons-material/History";
 import { useInvoice } from "../hooks/useInvoice";
 import { useBatchUpdateAdjustments } from "../hooks/useBatchUpdateAdjustments";
 import { MoneyDisplay } from "../components/common/MoneyDisplay";
+import { HistoryDialog } from "../components/history/HistoryDialog";
 
 function normalizeTo2dp(value: string): string {
   const trimmed = value.trim();
@@ -74,6 +78,10 @@ export function InvoiceDetailPage() {
   );
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [historyDialogItem, setHistoryDialogItem] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const handleEnterEditMode = useCallback(() => {
     if (!invoice) return;
@@ -279,6 +287,7 @@ export function InvoiceDetailPage() {
               <TableCell align="right">Actual</TableCell>
               <TableCell align="right">Adjustments</TableCell>
               <TableCell align="right">Billable</TableCell>
+              <TableCell align="center" sx={{ width: 60 }}></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -328,11 +337,37 @@ export function InvoiceDetailPage() {
                 <TableCell align="right">
                   <MoneyDisplay value={item.billable_amount} />
                 </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="View history">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setHistoryDialogItem({
+                          id: item.invoice_line_item_id,
+                          name: item.name,
+                        })
+                      }
+                    >
+                      <HistoryIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {historyDialogItem && (
+        <HistoryDialog
+          open={true}
+          onClose={() => setHistoryDialogItem(null)}
+          entityType="invoice_line_item"
+          entityId={historyDialogItem.id}
+          title={`History: ${historyDialogItem.name}`}
+          fieldLabels={{ adjustments: "Adjustments" }}
+        />
+      )}
 
       <Snackbar
         open={snackbarOpen}
