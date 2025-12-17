@@ -141,19 +141,6 @@ export function CommentItem({
         )}
       </Box>
 
-      {/* Reply form */}
-      {showReplyForm && (
-        <Box sx={{ mt: 2, ml: 4 }}>
-          <CommentForm
-            onSubmit={handleReplySubmit}
-            onCancel={() => setShowReplyForm(false)}
-            submitLabel="Reply"
-            placeholder="Write a reply..."
-            autoFocus
-          />
-        </Box>
-      )}
-
       {/* Nested replies (only for top-level comments) */}
       {depth === 0 && comment.replies.length > 0 && (
         <Box sx={{ ml: 4, mt: 2, borderLeft: 2, borderColor: "divider", pl: 2 }}>
@@ -167,6 +154,19 @@ export function CommentItem({
               onDelete={onDelete}
             />
           ))}
+        </Box>
+      )}
+
+      {/* Reply form - placed after replies so it appears at the bottom */}
+      {showReplyForm && (
+        <Box sx={{ mt: 2, ml: 4 }}>
+          <CommentForm
+            onSubmit={handleReplySubmit}
+            onCancel={() => setShowReplyForm(false)}
+            submitLabel="Reply"
+            placeholder="Write a reply..."
+            autoFocus
+          />
         </Box>
       )}
     </Box>
