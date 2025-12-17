@@ -55,6 +55,7 @@ async def patch_invoice_adjustments(
             session,
             invoice_id=invoice_id,
             updates=updates,
+            current_user_id=current_user.id,
         )
     except BatchUpdateError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

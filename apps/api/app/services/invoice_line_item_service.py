@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..models import InvoiceLineItem
 from ..repositories import invoice_line_item_repository
 from ..schemas.invoice_line_item import (
     BatchAdjustmentsResponse,
     InvoiceLineItemResponse,
 )
+from . import change_history_service
+from .change_history_service import EntityType
 from .money import parse_money_2dp
 
 
@@ -25,10 +29,12 @@ async def batch_update_adjustments(
     *,
     invoice_id: int,
     updates: list[tuple[int, str]],
+    current_user_id: int,
 ) -> BatchAdjustmentsResponse:
     """Batch update adjustments for multiple invoice line items.
 
     All-or-nothing: if any validation fails, the entire batch is rejected.
+    Records change history for each modified item.
     """
     # Parse and validate all adjustments first
     parsed_updates: list[tuple[int, Decimal]] = []
@@ -42,6 +48,15 @@ async def batch_update_adjustments(
                 invalid_ids=[ili_id],
             ) from e
 
+    # Get current values before update (for change history)
+    ids = [u[0] for u in parsed_updates]
+    stmt = select(InvoiceLineItem).where(
+        InvoiceLineItem.id.in_(ids),
+        InvoiceLineItem.invoice_id == invoice_id,
+    )
+    result = await session.execute(stmt)
+    old_items = {ili.id: ili.adjustments for ili in result.scalars().all()}
+
     # Perform batch update
     updated_items = await invoice_line_item_repository.batch_update_adjustments(
         session,
@@ -54,6 +69,27 @@ async def batch_update_adjustments(
         raise BatchUpdateError(
             f"One or more invoice_line_item_ids not found "
             f"or do not belong to invoice {invoice_id}"
+        )
+
+    # Record change history for items that actually changed (store raw values)
+    changes: list[tuple[int, dict | None, dict]] = []
+    for ili in updated_items:
+        old_adj = old_items.get(ili.id)
+        if old_adj is not None and old_adj != ili.adjustments:
+            changes.append(
+                (
+                    ili.id,
+                    {"adjustments": str(old_adj)},
+                    {"adjustments": str(ili.adjustments)},
+                )
+            )
+
+    if changes:
+        await change_history_service.record_changes_batch(
+            session,
+            entity_type=EntityType.INVOICE_LINE_ITEM,
+            changes=changes,
+            changed_by_user_id=current_user_id,
         )
 
     await session.commit()

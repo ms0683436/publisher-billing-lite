@@ -11,6 +11,8 @@ from ..api.deps import Pagination
 from ..repositories import campaign_repository, comment_repository
 from ..schemas.comment import CommentCreate, CommentListResponse, CommentResponse
 from ..schemas.user import UserBase
+from . import change_history_service
+from .change_history_service import EntityType
 from .errors import ForbiddenError, NotFoundError
 from .mention_service import parse_mentions, resolve_mentions
 
@@ -170,6 +172,9 @@ async def update_comment(
     if comment.author_id != current_user_id:
         raise ForbiddenError("edit", "comment")
 
+    # Store old content for change history
+    old_content = comment.content
+
     # Parse mentions from new content
     usernames = parse_mentions(content)
     mentioned_users, _ = await resolve_mentions(session, usernames)
@@ -181,6 +186,17 @@ async def update_comment(
         content=content,
         mentioned_user_ids=[u.id for u in mentioned_users],
     )
+
+    # Record change history if content actually changed (use actual stored value)
+    if old_content != updated.content:
+        await change_history_service.record_change(
+            session,
+            entity_type=EntityType.COMMENT,
+            entity_id=comment_id,
+            old_value={"content": old_content},
+            new_value={"content": updated.content},
+            changed_by_user_id=current_user_id,
+        )
 
     await session.commit()
 
