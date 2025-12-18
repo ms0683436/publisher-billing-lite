@@ -65,7 +65,6 @@ async def notification_stream(
     """SSE endpoint for real-time notifications.
 
     Streams notifications as Server-Sent Events.
-    Connect using EventSource in the browser.
     """
     broadcaster = get_broadcaster()
 

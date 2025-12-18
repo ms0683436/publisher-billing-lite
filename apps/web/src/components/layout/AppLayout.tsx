@@ -16,6 +16,7 @@ import {
   KeyboardArrowDown as ArrowDownIcon,
 } from "@mui/icons-material";
 import { Navigation } from "./Navigation";
+import { NotificationBell } from "../notifications/NotificationBell";
 import { useAuth } from "../../hooks/useAuth";
 
 export function AppLayout() {
@@ -56,6 +57,7 @@ export function AppLayout() {
           <Box sx={{ flexGrow: 1 }} />
           {user && (
             <>
+              <NotificationBell />
               <Button
                 color="inherit"
                 onClick={handleClick}

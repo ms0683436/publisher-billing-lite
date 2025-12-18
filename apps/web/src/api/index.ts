@@ -6,3 +6,4 @@ export * from "./users";
 export * from "./comments";
 export * from "./auth";
 export * from "./history";
+export * from "./notifications";

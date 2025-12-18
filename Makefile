@@ -137,14 +137,14 @@ lint: lint-api lint-web
 
 lint-api:
 	@echo "🔍 Running Python linters..."
-	docker compose exec api uv run ruff check app
+	docker compose exec api uv run ruff check app tests
 	docker compose exec api uv run mypy app
 	@echo "✅ Python linting passed!"
 
 lint-api-fix:
 	@echo "🧹 Auto-fixing + formatting Python (Ruff)..."
-	docker compose exec api uv run ruff check --fix .
-	docker compose exec api uv run ruff format .
+	docker compose exec api uv run ruff check --fix app tests
+	docker compose exec api uv run ruff format app tests
 	@echo "✅ Ruff fix + format complete!"
 
 lint-web:

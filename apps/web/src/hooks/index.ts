@@ -7,3 +7,5 @@ export * from "./useAuth";
 export * from "./useComments";
 export * from "./useUserSearch";
 export * from "./useChangeHistory";
+export * from "./useNotifications";
+export * from "./useNotificationStream";

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.services import notification_service
 
 
@@ -198,15 +200,12 @@ class TestMarkAsRead:
         """Raises NotFoundError for nonexistent notification."""
         user = await make_user(username="user")
 
-        try:
+        with pytest.raises(notification_service.NotFoundError):
             await notification_service.mark_as_read(
                 session,
                 notification_id=99999,
                 current_user_id=user.id,
             )
-            assert False, "Should have raised NotFoundError"
-        except notification_service.NotFoundError:
-            pass
 
     async def test_raises_forbidden_for_other_user(
         self, session, make_user, make_notification
@@ -216,15 +215,12 @@ class TestMarkAsRead:
         other = await make_user(username="other")
         notification = await make_notification(owner)
 
-        try:
+        with pytest.raises(notification_service.ForbiddenError):
             await notification_service.mark_as_read(
                 session,
                 notification_id=notification.id,
                 current_user_id=other.id,
             )
-            assert False, "Should have raised ForbiddenError"
-        except notification_service.ForbiddenError:
-            pass
 
 
 class TestMarkAllAsRead:

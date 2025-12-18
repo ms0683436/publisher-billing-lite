@@ -20,6 +20,7 @@ from app.models import (
     Notification,
     User,
 )
+from app.services import notification_broadcaster, notification_queue
 
 # Pre-computed bcrypt hash for "password123" (avoids import issues at module load)
 # Generated with: get_password_hash("password123")
@@ -248,3 +249,16 @@ def make_notification(session: AsyncSession):
         return notification
 
     return _make_notification
+
+
+@pytest.fixture(autouse=True)
+async def reset_notification_globals():
+    """Reset global notification queue and broadcaster instances after each test.
+
+    This prevents Redis connection issues when event loops are closed between tests.
+    """
+    yield
+
+    # Reset global instances after each test
+    await notification_queue.shutdown_notification_queue()
+    await notification_broadcaster.shutdown_broadcaster()

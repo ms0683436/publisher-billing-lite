@@ -9,6 +9,7 @@ import { CampaignsPage } from "./pages/CampaignsPage";
 import { CampaignDetailPage } from "./pages/CampaignDetailPage";
 import { InvoicesPage } from "./pages/InvoicesPage";
 import { InvoiceDetailPage } from "./pages/InvoiceDetailPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
               <Route path="campaigns/:id" element={<CampaignDetailPage />} />
               <Route path="invoices" element={<InvoicesPage />} />
               <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>

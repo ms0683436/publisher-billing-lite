@@ -257,7 +257,9 @@ class TestNotificationIntegration:
         """Creating a comment with @mention creates a notification."""
         campaign = await make_campaign()
         author = await make_user(username="author")
-        mentioned = await make_user(username="mentioned")
+        _mentioned = await make_user(
+            username="mentioned"
+        )  # Created for mention resolver
 
         # Create comment with mention
         await client.post(

@@ -7,6 +7,7 @@ A small full-stack app for managing publisher campaigns/orders and invoices (bil
 - **Authentication** - JWT-based login with access token (15min) and refresh token (7 days, HttpOnly cookie). Auto-refresh on 401.
 - **Campaigns & Invoices** - Manage publisher campaigns with line items and billing adjustments.
 - **Comments** - Campaign comments with @mention support (↑/↓ navigate, Tab/Enter select, Esc close).
+- **Notifications** - Real-time notification system for @mentions and replies via SSE (Server-Sent Events). Includes notification bell with badge, popover list, toast alerts, and full notifications page with pagination.
 - **Change History** - Audit trail for editable fields (adjustments, comments). View timeline with old→new values, editor, and timestamp.
 
 ## Repo Conventions
