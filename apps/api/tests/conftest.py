@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import AsyncGenerator
 from decimal import Decimal
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -20,7 +21,6 @@ from app.models import (
     Notification,
     User,
 )
-from app.services import notification_broadcaster, notification_queue
 
 # Pre-computed bcrypt hash for "password123" (avoids import issues at module load)
 # Generated with: get_password_hash("password123")
@@ -252,13 +252,24 @@ def make_notification(session: AsyncSession):
 
 
 @pytest.fixture(autouse=True)
-async def reset_notification_globals():
-    """Reset global notification queue and broadcaster instances after each test.
+def mock_notification_enqueue():
+    """Mock notification queue enqueue functions to prevent real Redis operations.
 
-    This prevents Redis connection issues when event loops are closed between tests.
+    This prevents tests from actually sending notifications to users
+    via the Redis queue and broadcaster.
+
+    Note: We patch where the functions are USED (comment_service), not where
+    they are DEFINED (notification_queue), because comment_service imports
+    them directly with `from .notification_queue import ...`.
     """
-    yield
-
-    # Reset global instances after each test
-    await notification_queue.shutdown_notification_queue()
-    await notification_broadcaster.shutdown_broadcaster()
+    with (
+        patch(
+            "app.services.comment_service.enqueue_mention_notifications",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "app.services.comment_service.enqueue_reply_notification",
+            new=AsyncMock(return_value=True),
+        ),
+    ):
+        yield

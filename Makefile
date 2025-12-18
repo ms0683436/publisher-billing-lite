@@ -1,4 +1,4 @@
-.PHONY: help up down web-install migrate migration-generate migration-downgrade migration-current migration-history db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
+.PHONY: help up down web-install migrate migration-generate migration-downgrade db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
 
 help:
 	@echo "Available commands:"
@@ -7,8 +7,6 @@ help:
 	@echo "  make migrate              - Run all migrations (upgrade to head)"
 	@echo "  make migration-generate   - Generate a new migration (autogenerate)"
 	@echo "  make migration-downgrade  - Downgrade database by 1 revision"
-	@echo "  make migration-current    - Show current migration revision"
-	@echo "  make migration-history    - Show migration history"
 	@echo "  make db-reset             - Reset database (downgrade to base, then upgrade to head)"
 	@echo "  make seed                 - Import seed data from seed.json (idempotent)"
 	@echo "  make db-setup             - Full database setup (migrate + seed)"
@@ -38,20 +36,17 @@ up:
 	else \
 		echo "✅ .env already exists."; \
 	fi
-	@echo "🚀 Starting db + redis + api + notification-worker..."
-	docker compose up --build -d db redis api notification-worker
-	@echo "📦 Installing web dependencies (via docker compose)..."
-	$(MAKE) web-install
-	@echo "🚀 Starting web..."
-	docker compose up --build -d web
+	@echo "🚀 Starting all services..."
+	docker compose up --build -d
 	@echo "✅ Services started!"
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Run 'make db-setup' to initialize the database"
 	@echo "  2. Access the app at http://localhost:5173"
 
+# Update web dependencies in named volume (run when package.json changes)
 web-install:
-	docker compose run --rm --no-deps --build web pnpm install --frozen-lockfile --force
+	docker compose exec web pnpm install --frozen-lockfile
 
 # Stop all services
 down:
@@ -71,14 +66,6 @@ migration-generate:
 # Downgrade database by 1 revision
 migration-downgrade:
 	docker compose exec api uv run alembic downgrade -1
-
-# Show current migration revision
-migration-current:
-	docker compose exec api uv run alembic current
-
-# Show migration history
-migration-history:
-	docker compose exec api uv run alembic history --verbose
 
 # Reset database (downgrade to base, then upgrade to head)
 db-reset:

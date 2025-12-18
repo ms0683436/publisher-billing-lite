@@ -107,7 +107,6 @@ You can also run these steps separately:
 
 - Web: <http://localhost:5173>
 - API: <http://localhost:8000>
-  - Example endpoint: <http://localhost:8000/api/v1/hello>
   - API Documentation (Swagger UI): <http://localhost:8000/docs>
   - API Documentation (ReDoc): <http://localhost:8000/redoc>
 
