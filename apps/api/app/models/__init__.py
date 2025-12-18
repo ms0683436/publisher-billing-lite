@@ -6,6 +6,7 @@ from .comment_mention import CommentMention
 from .invoice import Invoice
 from .invoice_line_item import InvoiceLineItem
 from .line_item import LineItem
+from .notification import Notification
 from .user import User
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "Invoice",
     "InvoiceLineItem",
     "LineItem",
+    "Notification",
     "User",
 ]

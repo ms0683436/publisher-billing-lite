@@ -15,6 +15,10 @@ from . import change_history_service
 from .change_history_service import EntityType
 from .errors import ForbiddenError, NotFoundError
 from .mention_service import parse_mentions, resolve_mentions
+from .notification_queue import (
+    enqueue_mention_notifications,
+    enqueue_reply_notification,
+)
 
 if TYPE_CHECKING:
     from ..models import Comment
@@ -120,13 +124,6 @@ async def create_comment(
     usernames = parse_mentions(data.content)
     mentioned_users, unresolved = await resolve_mentions(session, usernames)
 
-    # TODO: Implement notification system for mentioned users
-    if mentioned_users:
-        logger.info(
-            "TODO: Notify users %s about mention in new comment",
-            [u.username for u in mentioned_users],
-        )
-
     # Create comment
     comment = await comment_repository.create_comment(
         session,
@@ -138,6 +135,21 @@ async def create_comment(
     )
 
     await session.commit()
+
+    # Enqueue notifications asynchronously (processed by worker)
+    if mentioned_users:
+        await enqueue_mention_notifications(
+            mentioned_user_ids=[u.id for u in mentioned_users],
+            author_id=author_id,
+            comment_id=comment.id,
+        )
+
+    if data.parent_id is not None:
+        await enqueue_reply_notification(
+            parent_comment_id=data.parent_id,
+            reply_author_id=author_id,
+            reply_comment_id=comment.id,
+        )
 
     return _comment_to_response(comment, include_replies=True)
 
@@ -172,12 +184,14 @@ async def update_comment(
     if comment.author_id != current_user_id:
         raise ForbiddenError("edit", "comment")
 
-    # Store old content for change history
+    # Store old content and mentions for comparison
     old_content = comment.content
+    old_mentioned_user_ids = {m.user_id for m in comment.mentions}
 
     # Parse mentions from new content
     usernames = parse_mentions(content)
     mentioned_users, _ = await resolve_mentions(session, usernames)
+    new_mentioned_user_ids = {u.id for u in mentioned_users}
 
     # Update comment
     updated = await comment_repository.update_comment(
@@ -199,6 +213,15 @@ async def update_comment(
         )
 
     await session.commit()
+
+    # Enqueue notifications for NEW mentions only (users who weren't mentioned before)
+    newly_mentioned_user_ids = new_mentioned_user_ids - old_mentioned_user_ids
+    if newly_mentioned_user_ids:
+        await enqueue_mention_notifications(
+            mentioned_user_ids=list(newly_mentioned_user_ids),
+            author_id=current_user_id,
+            comment_id=updated.id,
+        )
 
     return _comment_to_response(updated, include_replies=True)
 

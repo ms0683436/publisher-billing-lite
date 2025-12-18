@@ -38,8 +38,8 @@ up:
 	else \
 		echo "✅ .env already exists."; \
 	fi
-	@echo "🚀 Starting db + api..."
-	docker compose up --build -d db api
+	@echo "🚀 Starting db + redis + api + notification-worker..."
+	docker compose up --build -d db redis api notification-worker
 	@echo "📦 Installing web dependencies (via docker compose)..."
 	$(MAKE) web-install
 	@echo "🚀 Starting web..."

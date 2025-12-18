@@ -1,9 +1,24 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.v1.router import router as v1_router
+from .services.notification_broadcaster import shutdown_broadcaster
+from .services.notification_queue import shutdown_notification_queue
 
-app = FastAPI(title="Publisher Billing API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager for startup/shutdown events."""
+    # Startup
+    yield
+    # Shutdown: clean up Redis connections
+    await shutdown_broadcaster()
+    await shutdown_notification_queue()
+
+
+app = FastAPI(title="Publisher Billing API", lifespan=lifespan)
 
 # CORS configuration
 app.add_middleware(

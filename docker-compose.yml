@@ -15,6 +15,16 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   api:
     build: ./apps/api
     ports:
@@ -23,6 +33,7 @@ services:
       - .env
     environment:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     volumes:
       - ./apps/api:/app
       - /app/.venv  # Prevent bind mount from overwriting .venv
@@ -31,6 +42,27 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  notification-worker:
+    build: ./apps/api
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    volumes:
+      - ./apps/api:/app
+      - /app/.venv
+    working_dir: /app
+    command: uv run python -m app.workers.notification_worker
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   web:
     build: ./apps/web

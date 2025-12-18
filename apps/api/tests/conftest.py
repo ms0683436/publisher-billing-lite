@@ -17,6 +17,7 @@ from app.models import (
     Invoice,
     InvoiceLineItem,
     LineItem,
+    Notification,
     User,
 )
 
@@ -218,3 +219,32 @@ def make_comment_mention(session: AsyncSession):
         return mention
 
     return _make_comment_mention
+
+
+@pytest.fixture
+def make_notification(session: AsyncSession):
+    """Factory fixture to create Notification instances."""
+
+    async def _make_notification(
+        user: User,
+        *,
+        notification_type: str = "mention",
+        message: str = "Test notification",
+        is_read: bool = False,
+        comment: Comment | None = None,
+        actor: User | None = None,
+    ) -> Notification:
+        notification = Notification(
+            user_id=user.id,
+            type=notification_type,
+            message=message,
+            is_read=is_read,
+            comment_id=comment.id if comment else None,
+            actor_id=actor.id if actor else None,
+        )
+        session.add(notification)
+        await session.flush()
+        await session.refresh(notification)
+        return notification
+
+    return _make_notification

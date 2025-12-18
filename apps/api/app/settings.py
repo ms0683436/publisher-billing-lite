@@ -8,6 +8,7 @@ from typing import Literal
 class Settings:
     database_url: str
     jwt_secret_key: str
+    redis_url: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
@@ -27,7 +28,10 @@ def get_settings() -> Settings:
     if not jwt_secret_key:
         raise RuntimeError("JWT_SECRET_KEY environment variable is required")
 
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379").strip()
+
     return Settings(
         database_url=database_url,
         jwt_secret_key=jwt_secret_key,
+        redis_url=redis_url,
     )

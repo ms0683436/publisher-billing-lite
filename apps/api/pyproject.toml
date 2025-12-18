@@ -13,6 +13,7 @@ dependencies = [
     "bcrypt>=4.0,<4.1",
     "passlib[bcrypt]>=1.7.4",
     "PyJWT>=2.8.0",
+    "redis[hiredis]>=5.0",
 ]
 
 [dependency-groups]
