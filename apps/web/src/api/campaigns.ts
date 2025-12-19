@@ -1,18 +1,19 @@
 import { apiClient } from "./client";
+import { buildUrl } from "./utils";
 import type { CampaignListResponse, CampaignDetail } from "../types/campaign";
-import type { Pagination } from "../types/common";
+import type { CampaignListParams } from "../types/common";
 
 export async function fetchCampaigns(
-  pagination?: Pagination
+  params?: CampaignListParams
 ): Promise<CampaignListResponse> {
-  const params = new URLSearchParams();
-  if (pagination?.limit) params.set("limit", String(pagination.limit));
-  if (pagination?.offset) params.set("offset", String(pagination.offset));
-
-  const query = params.toString();
-  return apiClient<CampaignListResponse>(
-    `/api/v1/campaigns${query ? `?${query}` : ""}`
-  );
+  const url = buildUrl("/api/v1/campaigns", {
+    limit: params?.limit,
+    offset: params?.offset,
+    search: params?.search,
+    sort_by: params?.sortBy,
+    sort_dir: params?.sortDir,
+  });
+  return apiClient<CampaignListResponse>(url);
 }
 
 export async function fetchCampaign(id: number): Promise<CampaignDetail> {

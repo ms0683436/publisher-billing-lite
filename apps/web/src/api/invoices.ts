@@ -1,18 +1,19 @@
 import { apiClient } from "./client";
+import { buildUrl } from "./utils";
 import type { InvoiceListResponse, InvoiceDetail } from "../types/invoice";
-import type { Pagination } from "../types/common";
+import type { InvoiceListParams } from "../types/common";
 
 export async function fetchInvoices(
-  pagination?: Pagination
+  params?: InvoiceListParams
 ): Promise<InvoiceListResponse> {
-  const params = new URLSearchParams();
-  if (pagination?.limit) params.set("limit", String(pagination.limit));
-  if (pagination?.offset) params.set("offset", String(pagination.offset));
-
-  const query = params.toString();
-  return apiClient<InvoiceListResponse>(
-    `/api/v1/invoices${query ? `?${query}` : ""}`
-  );
+  const url = buildUrl("/api/v1/invoices", {
+    limit: params?.limit,
+    offset: params?.offset,
+    search: params?.search,
+    sort_by: params?.sortBy,
+    sort_dir: params?.sortDir,
+  });
+  return apiClient<InvoiceListResponse>(url);
 }
 
 export async function fetchInvoice(id: number): Promise<InvoiceDetail> {

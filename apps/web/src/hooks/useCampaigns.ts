@@ -1,22 +1,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchCampaigns } from "../api/campaigns";
 import type { CampaignListItem } from "../types/campaign";
-import type { Pagination } from "../types/common";
+import type { CampaignListParams } from "../types/common";
 
-export function useCampaigns(pagination?: Pagination) {
+export function useCampaigns(params?: CampaignListParams) {
   const [campaigns, setCampaigns] = useState<CampaignListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const limit = pagination?.limit;
-  const offset = pagination?.offset;
+  const { limit, offset, search, sortBy, sortDir } = params ?? {};
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchCampaigns({ limit, offset });
+      const response = await fetchCampaigns({
+        limit,
+        offset,
+        search,
+        sortBy,
+        sortDir,
+      });
       setCampaigns(response.campaigns);
       setTotal(response.total);
     } catch (err) {
@@ -24,7 +29,7 @@ export function useCampaigns(pagination?: Pagination) {
     } finally {
       setLoading(false);
     }
-  }, [limit, offset]);
+  }, [limit, offset, search, sortBy, sortDir]);
 
   useEffect(() => {
     load();
