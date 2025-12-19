@@ -40,10 +40,29 @@ services:
     working_dir: /app
     command: uv run uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
     depends_on:
+      api-migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  api-migrate:
+    build: ./apps/api
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    volumes:
+      - ./apps/api:/app
+      - /app/.venv  # Prevent bind mount from overwriting .venv
+    working_dir: /app
+    command: uv run alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
 
   notification-worker:
     build: ./apps/api
@@ -58,9 +77,29 @@ services:
     working_dir: /app
     command: uv run python -m app.workers.notification_worker
     depends_on:
+      api-migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  change-history-worker:
+    build: ./apps/api
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+    volumes:
+      - ./apps/api:/app
+      - /app/.venv
+    working_dir: /app
+    command: uv run python -m app.workers.change_history_worker
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+      db:
         condition: service_healthy
     restart: unless-stopped
 

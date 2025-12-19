@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..api.deps import Pagination
+from ..queue.change_history_queue import enqueue_change_history
 from ..repositories import campaign_repository, comment_repository
 from ..schemas.comment import CommentCreate, CommentListResponse, CommentResponse
 from ..schemas.user import UserBase
-from . import change_history_service
 from .change_history_service import EntityType
 from .errors import ForbiddenError, NotFoundError
 from .mention_service import parse_mentions, resolve_mentions
@@ -201,18 +201,17 @@ async def update_comment(
         mentioned_user_ids=[u.id for u in mentioned_users],
     )
 
-    # Record change history if content actually changed (use actual stored value)
+    await session.commit()
+
+    # Enqueue change history recording asynchronously (after commit)
     if old_content != updated.content:
-        await change_history_service.record_change(
-            session,
-            entity_type=EntityType.COMMENT,
+        await enqueue_change_history(
+            entity_type=EntityType.COMMENT.value,
             entity_id=comment_id,
             old_value={"content": old_content},
             new_value={"content": updated.content},
             changed_by_user_id=current_user_id,
         )
-
-    await session.commit()
 
     # Enqueue notifications for NEW mentions only (users who weren't mentioned before)
     newly_mentioned_user_ids = new_mentioned_user_ids - old_mentioned_user_ids

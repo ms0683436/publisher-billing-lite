@@ -56,7 +56,7 @@ down:
 
 # Run migrations (upgrade to head)
 migrate:
-	docker compose exec api uv run alembic upgrade head
+	docker compose run --rm api-migrate
 
 # Generate a new migration
 migration-generate:

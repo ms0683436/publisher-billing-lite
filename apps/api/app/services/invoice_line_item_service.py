@@ -6,12 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import InvoiceLineItem
+from ..queue.change_history_queue import enqueue_change_history_batch
 from ..repositories import invoice_line_item_repository
 from ..schemas.invoice_line_item import (
     BatchAdjustmentsResponse,
     InvoiceLineItemResponse,
 )
-from . import change_history_service
 from .change_history_service import EntityType
 from .money import parse_money_2dp
 
@@ -84,15 +84,15 @@ async def batch_update_adjustments(
                 )
             )
 
+    await session.commit()
+
+    # Enqueue change history recording asynchronously (after commit)
     if changes:
-        await change_history_service.record_changes_batch(
-            session,
-            entity_type=EntityType.INVOICE_LINE_ITEM,
+        await enqueue_change_history_batch(
+            entity_type=EntityType.INVOICE_LINE_ITEM.value,
             changes=changes,
             changed_by_user_id=current_user_id,
         )
-
-    await session.commit()
 
     return BatchAdjustmentsResponse(
         invoice_id=invoice_id,

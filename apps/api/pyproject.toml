@@ -14,6 +14,8 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "PyJWT>=2.8.0",
     "redis[hiredis]>=5.0",
+    "procrastinate>=3,<4",
+    "psycopg[binary]>=3,<4",
 ]
 
 [dependency-groups]
@@ -57,6 +59,9 @@ no_implicit_optional = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+markers = [
+    "sync_change_history: mark test to execute change history synchronously (bypass queue)",
+]
 
 [build-system]
 requires = ["hatchling"]

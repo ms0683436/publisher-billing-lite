@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.v1.router import router as v1_router
+from .queue.procrastinate_app import get_procrastinate_app
 from .services.notification_broadcaster import shutdown_broadcaster
 from .services.notification_queue import shutdown_notification_queue
 
@@ -11,11 +12,20 @@ from .services.notification_queue import shutdown_notification_queue
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown events."""
-    # Startup
-    yield
-    # Shutdown: clean up Redis connections
-    await shutdown_broadcaster()
-    await shutdown_notification_queue()
+    # Startup: open Procrastinate connection
+    procrastinate_app = get_procrastinate_app()
+    await procrastinate_app.open_async()
+    try:
+        yield
+    finally:
+        # Shutdown: clean up connections (ensure all run even if one fails)
+        try:
+            await shutdown_broadcaster()
+        finally:
+            try:
+                await shutdown_notification_queue()
+            finally:
+                await procrastinate_app.close_async()
 
 
 app = FastAPI(title="Publisher Billing API", lifespan=lifespan)
