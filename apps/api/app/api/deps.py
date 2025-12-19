@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Annotated
+from enum import Enum
+from typing import Annotated, Literal
 
 from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -32,6 +33,79 @@ def get_pagination(
 
 
 PaginationDep = Annotated[Pagination, Depends(get_pagination)]
+
+
+class SortDirection(str, Enum):
+    asc = "asc"
+    desc = "desc"
+
+
+@dataclass(frozen=True, slots=True)
+class SearchParams:
+    search: str | None
+
+
+def get_search_params(
+    search: str | None = Query(None, min_length=1, max_length=100),
+) -> SearchParams:
+    return SearchParams(search=search)
+
+
+SearchDep = Annotated[SearchParams, Depends(get_search_params)]
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignSortParams:
+    sort_by: (
+        Literal[
+            "id",
+            "name",
+            "total_booked",
+            "total_actual",
+            "total_billable",
+            "line_items_count",
+        ]
+        | None
+    )
+    sort_dir: SortDirection
+
+
+def get_campaign_sort_params(
+    sort_by: (
+        Literal[
+            "id",
+            "name",
+            "total_booked",
+            "total_actual",
+            "total_billable",
+            "line_items_count",
+        ]
+        | None
+    ) = Query(None),
+    sort_dir: SortDirection = Query(SortDirection.asc),  # noqa: B008
+) -> CampaignSortParams:
+    return CampaignSortParams(sort_by=sort_by, sort_dir=sort_dir)
+
+
+CampaignSortDep = Annotated[CampaignSortParams, Depends(get_campaign_sort_params)]
+
+
+@dataclass(frozen=True, slots=True)
+class InvoiceSortParams:
+    sort_by: Literal["id", "campaign_name", "total_billable", "line_items_count"] | None
+    sort_dir: SortDirection
+
+
+def get_invoice_sort_params(
+    sort_by: Literal["id", "campaign_name", "total_billable", "line_items_count"]
+    | None = Query(None),
+    sort_dir: SortDirection = Query(SortDirection.asc),  # noqa: B008
+) -> InvoiceSortParams:
+    return InvoiceSortParams(sort_by=sort_by, sort_dir=sort_dir)
+
+
+InvoiceSortDep = Annotated[InvoiceSortParams, Depends(get_invoice_sort_params)]
+
 
 # HTTP Bearer token security scheme
 security = HTTPBearer(auto_error=False)
@@ -89,6 +163,16 @@ __all__ = [
     "Pagination",
     "get_pagination",
     "PaginationDep",
+    "SortDirection",
+    "SearchParams",
+    "get_search_params",
+    "SearchDep",
+    "CampaignSortParams",
+    "get_campaign_sort_params",
+    "CampaignSortDep",
+    "InvoiceSortParams",
+    "get_invoice_sort_params",
+    "InvoiceSortDep",
     "AuthenticatedUser",
     "CurrentUserDep",
     "get_current_user",

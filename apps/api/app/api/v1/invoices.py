@@ -1,6 +1,12 @@
 from fastapi import APIRouter, HTTPException
 
-from ...api.deps import CurrentUserDep, PaginationDep, SessionDep
+from ...api.deps import (
+    CurrentUserDep,
+    InvoiceSortDep,
+    PaginationDep,
+    SearchDep,
+    SessionDep,
+)
 from ...schemas.invoice import InvoiceDetail, InvoiceListResponse
 from ...schemas.invoice_line_item import (
     BatchAdjustmentsResponse,
@@ -20,9 +26,17 @@ router = APIRouter(tags=["invoices"])
 async def list_invoices(
     session: SessionDep,
     pagination: PaginationDep,
+    search_params: SearchDep,
+    sort_params: InvoiceSortDep,
     current_user: CurrentUserDep,
 ):
-    return await invoice_service.list_invoices(session, pagination=pagination)
+    return await invoice_service.list_invoices(
+        session,
+        pagination=pagination,
+        search=search_params.search,
+        sort_by=sort_params.sort_by,
+        sort_dir=sort_params.sort_dir.value,
+    )
 
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceDetail)

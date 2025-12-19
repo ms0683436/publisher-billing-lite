@@ -13,9 +13,17 @@ async def list_invoices(
     session: AsyncSession,
     *,
     pagination: Pagination,
+    search: str | None = None,
+    sort_by: str | None = None,
+    sort_dir: str = "asc",
 ) -> InvoiceListResponse:
     rows, total = await invoice_repository.list_invoices_page(
-        session, limit=pagination.limit, offset=pagination.offset
+        session,
+        limit=pagination.limit,
+        offset=pagination.offset,
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
     invoices = [

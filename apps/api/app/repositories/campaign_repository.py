@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.selectable import Subquery
 
 from ..models import Campaign, Invoice, InvoiceLineItem, LineItem
+from .utils import escape_like_pattern
 
 MONEY = Numeric(precision=30, scale=15, asdecimal=True)
 
@@ -77,8 +78,19 @@ async def list_campaigns_page(
     *,
     limit: int,
     offset: int,
+    search: str | None = None,
+    sort_by: str | None = None,
+    sort_dir: str = "asc",
 ) -> tuple[list[CampaignListRow], int]:
     """List campaigns with totals, with offset/limit pagination.
+
+    Args:
+        session: Database session
+        limit: Maximum number of results
+        offset: Number of results to skip
+        search: Optional search term for campaign name (case-insensitive contains)
+        sort_by: Field to sort by (id, name, total_booked, total_actual, total_billable, line_items_count)
+        sort_dir: Sort direction (asc or desc)
 
     Returns:
         (rows, total)
@@ -87,32 +99,68 @@ async def list_campaigns_page(
     li_agg = _campaign_line_item_agg_subq()
     inv_agg = _campaign_invoice_agg_subq()
 
+    # Build labeled columns for sorting
+    total_booked_col = func.coalesce(
+        li_agg.c.total_booked, sa.literal(0).cast(MONEY)
+    ).label("total_booked")
+    total_actual_col = func.coalesce(
+        inv_agg.c.total_actual, sa.literal(0).cast(MONEY)
+    ).label("total_actual")
+    total_billable_col = func.coalesce(
+        inv_agg.c.total_billable, sa.literal(0).cast(MONEY)
+    ).label("total_billable")
+    line_items_count_col = func.coalesce(li_agg.c.line_items_count, 0).label(
+        "line_items_count"
+    )
+
     stmt = (
         select(
             Campaign.id,
             Campaign.name,
-            func.coalesce(li_agg.c.total_booked, sa.literal(0).cast(MONEY)).label(
-                "total_booked"
-            ),
-            func.coalesce(inv_agg.c.total_actual, sa.literal(0).cast(MONEY)).label(
-                "total_actual"
-            ),
-            func.coalesce(inv_agg.c.total_billable, sa.literal(0).cast(MONEY)).label(
-                "total_billable"
-            ),
-            func.coalesce(li_agg.c.line_items_count, 0).label("line_items_count"),
+            total_booked_col,
+            total_actual_col,
+            total_billable_col,
+            line_items_count_col,
             Invoice.id.label("invoice_id"),
         )
         .select_from(Campaign)
         .outerjoin(li_agg, li_agg.c.campaign_id == Campaign.id)
         .outerjoin(Invoice, Invoice.campaign_id == Campaign.id)
         .outerjoin(inv_agg, inv_agg.c.campaign_id == Campaign.id)
-        .order_by(Campaign.id)
-        .limit(limit)
-        .offset(offset)
     )
 
     total_stmt = select(func.count()).select_from(Campaign)
+
+    # Apply search filter
+    if search:
+        search_filter = Campaign.name.ilike(
+            f"%{escape_like_pattern(search)}%", escape="\\"
+        )
+        stmt = stmt.where(search_filter)
+        total_stmt = total_stmt.where(search_filter)
+
+    # Build sort column mapping
+    sort_columns = {
+        "id": Campaign.id,
+        "name": Campaign.name,
+        "total_booked": total_booked_col,
+        "total_actual": total_actual_col,
+        "total_billable": total_billable_col,
+        "line_items_count": line_items_count_col,
+    }
+
+    # Apply sorting (nulls_last for consistent behavior)
+    if sort_by and sort_by in sort_columns:
+        sort_col = sort_columns[sort_by]
+        if sort_dir == "desc":
+            stmt = stmt.order_by(sort_col.desc().nulls_last())
+        else:
+            stmt = stmt.order_by(sort_col.asc().nulls_last())
+    else:
+        stmt = stmt.order_by(Campaign.id)
+
+    stmt = stmt.limit(limit).offset(offset)
+
     total = (await session.execute(total_stmt)).scalar_one()
 
     rows = (await session.execute(stmt)).all()

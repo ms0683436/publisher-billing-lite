@@ -1,6 +1,12 @@
 from fastapi import APIRouter, HTTPException
 
-from ...api.deps import CurrentUserDep, PaginationDep, SessionDep
+from ...api.deps import (
+    CampaignSortDep,
+    CurrentUserDep,
+    PaginationDep,
+    SearchDep,
+    SessionDep,
+)
 from ...schemas.campaign import CampaignDetail, CampaignListResponse
 from ...services import NotFoundError, campaign_service
 
@@ -11,9 +17,17 @@ router = APIRouter(tags=["campaigns"])
 async def list_campaigns(
     session: SessionDep,
     pagination: PaginationDep,
+    search_params: SearchDep,
+    sort_params: CampaignSortDep,
     current_user: CurrentUserDep,
 ):
-    return await campaign_service.list_campaigns(session, pagination=pagination)
+    return await campaign_service.list_campaigns(
+        session,
+        pagination=pagination,
+        search=search_params.search,
+        sort_by=sort_params.sort_by,
+        sort_dir=sort_params.sort_dir.value,
+    )
 
 
 @router.get("/campaigns/{campaign_id}", response_model=CampaignDetail)

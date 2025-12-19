@@ -21,6 +21,7 @@ from .invoice_repository import (
     list_invoice_line_items,
     list_invoices_page,
 )
+from .utils import escape_like_pattern
 
 __all__ = [
     "CampaignListRow",
@@ -29,6 +30,7 @@ __all__ = [
     "InvoiceListRow",
     "InvoiceSummaryRow",
     "batch_update_adjustments",
+    "escape_like_pattern",
     "get_campaign",
     "get_invoice_header",
     "get_invoice_summary_for_campaign",
