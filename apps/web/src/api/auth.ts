@@ -1,9 +1,7 @@
 import type { AuthUser, LoginRequest, TokenResponse } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
 export async function login(credentials: LoginRequest): Promise<TokenResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+  const response = await fetch("/api/v1/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -21,7 +19,7 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
 }
 
 export async function refresh(): Promise<TokenResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+  const response = await fetch("/api/v1/auth/refresh", {
     method: "POST",
     credentials: "include", // Include cookies for refresh token
   });
@@ -34,14 +32,14 @@ export async function refresh(): Promise<TokenResponse> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+  await fetch("/api/v1/auth/logout", {
     method: "POST",
     credentials: "include",
   });
 }
 
 export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+  const response = await fetch("/api/v1/auth/me", {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

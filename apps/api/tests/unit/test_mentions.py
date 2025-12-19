@@ -20,7 +20,7 @@ class TestParseMentions:
         assert parse_mentions("hi @Bob") == ["Bob"]
 
     def test_newline_before_at_matches(self):
-        # We treat "空格" as any whitespace character.
+        # Whitespace includes newlines, tabs, etc.
         assert parse_mentions("hi\n@Bob") == ["Bob"]
 
     def test_parenthesis_before_at_does_not_match(self):

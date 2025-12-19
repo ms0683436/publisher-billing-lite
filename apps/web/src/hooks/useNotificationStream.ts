@@ -3,8 +3,6 @@ import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { getAccessToken } from "../api/client";
 import type { Notification } from "../types/notification";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
 interface UseNotificationStreamOptions {
   onNotification: (notification: Notification) => void;
   /** Called when SSE reconnects (after initial connection). Use this to refetch data. */
@@ -62,7 +60,7 @@ export function useNotificationStream({
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    const url = `${API_BASE_URL}/api/v1/notifications/stream`;
+    const url = "/api/v1/notifications/stream";
 
     fetchEventSource(url, {
       method: "GET",

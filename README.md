@@ -2,13 +2,15 @@
 
 A small full-stack app for managing publisher campaigns/orders and invoices (billing adjustments).
 
+[![codecov](https://codecov.io/gh/ms0683436/publisher-billing-lite/graph/badge.svg?token=O13ADIRX0A)](https://codecov.io/gh/ms0683436/publisher-billing-lite)
+
 ## Features
 
 - **Authentication** - JWT-based login with access token (15min) and refresh token (7 days, HttpOnly cookie). Auto-refresh on 401.
 - **Campaigns & Invoices** - Manage publisher campaigns with line items and billing adjustments.
 - **Comments** - Campaign comments with @mention support (↑/↓ navigate, Tab/Enter select, Esc close).
 - **Notifications** - Real-time notification system for @mentions and replies via SSE (Server-Sent Events). Includes notification bell with badge, popover list, toast alerts, and full notifications page with pagination.
-- **Change History** - Audit trail for editable fields (adjustments, comments). View timeline with old→new values, editor, and timestamp.
+- **Change History** - Audit trail for editable fields (adjustments, comments). View timeline with old→new values, editor, and timestamp. Processed asynchronously via Procrastinate job queue.
 
 ## Repo Conventions
 
@@ -32,6 +34,12 @@ A small full-stack app for managing publisher campaigns/orders and invoices (bil
 - **Why:** React + TS gives strong developer ergonomics; Vite keeps dev server/builds fast; MUI provides solid, accessible UI primitives quickly.
 - **Package manager:** pnpm
   - **Why:** Fast, disk-efficient installs; pinned via `packageManager` for reproducibility.
+
+### Background Processing
+
+- **Job Queue:** Procrastinate (PostgreSQL-based)
+  - **Why:** No additional infrastructure (uses existing PostgreSQL), supports LISTEN/NOTIFY for real-time job notifications, async-native Python.
+- **Worker:** Change history worker with concurrency=5, entity-level locking for sequential processing per entity.
 
 ### Dev/Runtime
 
@@ -81,22 +89,29 @@ make up
 This will automatically:
 
 - Create `.env` from `.env.example` if it doesn't exist
-- Build and start all services in detached mode
+- Build and start all services in detached mode (API, Web, Worker, Database)
+- Run API database migrations via the `api-migrate` init service
+
+**Services started:**
+
+- `db` - PostgreSQL database
+- `api` - FastAPI backend
+- `web` - React frontend
+- `change-history-worker` - Background worker for async change history processing
 
 If you have port conflicts, edit `.env` and change `DB_PORT`, `API_PORT`, and/or `WEB_PORT`, then run `make up` again.
 
-**Initialize database (first time only):**
+**Initialize database (seed data):**
 
-After containers are running, set up the database schema and import seed data:
+Migrations are applied automatically on startup (via `api-migrate`). To import seed data:
 
 ```bash
-make db-setup
+make seed
 ```
 
-This will:
+This imports seed data from `apps/api/app/seeds/placements_teaser_data.json` and `apps/api/app/seeds/users.json`
 
-1. Run database migrations (create tables)
-2. Import seed data from `apps/api/app/seeds/placements_teaser_data.json`
+If you prefer a one-command setup, `make db-setup` is still available (it will re-run migrations safely, then seed).
 
 You can also run these steps separately:
 
@@ -105,10 +120,14 @@ You can also run these steps separately:
 
 **Access the application:**
 
+- App: <http://localhost> (via nginx proxy)
+- API Documentation (Swagger UI): <http://localhost/api/docs>
+- API Documentation (ReDoc): <http://localhost/api/redoc>
+
+Direct access (bypassing nginx):
+
 - Web: <http://localhost:5173>
 - API: <http://localhost:8000>
-  - API Documentation (Swagger UI): <http://localhost:8000/docs>
-  - API Documentation (ReDoc): <http://localhost:8000/redoc>
 
 **Stop the application:**
 
@@ -157,3 +176,7 @@ uv run --project apps/api pre-commit install
 ```
 
 CI also runs the same checks via `.github/workflows/python-quality.yml`.
+
+### code coverage
+
+[![codecov](https://codecov.io/gh/ms0683436/publisher-billing-lite/graph/badge.svg?token=O13ADIRX0A)](https://codecov.io/gh/ms0683436/publisher-billing-lite)

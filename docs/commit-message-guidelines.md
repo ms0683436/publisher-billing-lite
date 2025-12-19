@@ -55,8 +55,8 @@ Examples: `feat(api): ...`, `fix(web): ...`, `chore(deps): ...`
 - Do not end with a period (`.`)
 - Keep it short (recommended ≤ 72 chars)
 - Be specific (avoid vague messages):
-  - ✅ `fix(api): handle missing adjustments as 0`
-  - ❌ `fix: bug`
+  - Good: `fix(api): handle missing adjustments as 0`
+  - Bad: `fix: bug`
 
 ## 5) Body Rules (Recommended)
 

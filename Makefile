@@ -1,9 +1,10 @@
-.PHONY: help up down web-install migrate migration-generate migration-downgrade db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
+.PHONY: help up down ngrok ngrok-down web-install migrate migration-generate migration-downgrade db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
 
 help:
 	@echo "Available commands:"
-	@echo "  make up                   - Start all services (creates .env if needed)"
-	@echo "  make down                 - Stop all services"
+	@echo "  make up                   - Start core services with nginx (creates .env if needed)"
+	@echo "  make down                 - Stop core services (keeps ngrok running)"
+	@echo "  make ngrok                - Start ngrok for external access"
 	@echo "  make migrate              - Run all migrations (upgrade to head)"
 	@echo "  make migration-generate   - Generate a new migration (autogenerate)"
 	@echo "  make migration-downgrade  - Downgrade database by 1 revision"
@@ -27,32 +28,46 @@ help:
 	@echo "  make format-api           - Run Ruff format (Python)"
 	@echo "  make format-check         - Check formatting without changes"
 
-# Start all services (create .env if needed)
+# Start core services (create .env if needed)
 up:
 	@if [ ! -f .env ]; then \
-		echo "📄 .env not found, creating from .env.example..."; \
+		echo ".env not found, creating from .env.example..."; \
 		cp .env.example .env; \
-		echo "✅ .env created. You can edit it to change ports if needed."; \
+		echo "Done. .env created. You can edit it to change ports if needed."; \
 	else \
-		echo "✅ .env already exists."; \
+		echo ".env already exists."; \
 	fi
-	@echo "🚀 Starting all services..."
-	docker compose up --build -d
-	@echo "✅ Services started!"
+	@echo "Starting core services..."
+	docker compose up --build -d db redis api notification-worker change-history-worker web nginx
+	@echo "Done. Services started!"
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Run 'make db-setup' to initialize the database"
-	@echo "  2. Access the app at http://localhost:5173"
+	@echo "  2. Access the app at http://localhost"
+	@echo "  3. Run 'make ngrok' for external access via ngrok"
 
 # Update web dependencies in named volume (run when package.json changes)
 web-install:
 	docker compose exec web pnpm install --frozen-lockfile
 
-# Stop all services
+# Stop core services (keeps ngrok running if started separately)
 down:
-	@echo "🛑 Stopping services..."
-	docker compose down
-	@echo "✅ Services stopped!"
+	@echo "Stopping core services..."
+	docker compose down db redis api notification-worker change-history-worker web nginx
+	@echo "Done. Core services stopped!"
+
+# Start ngrok for external access
+ngrok:
+	@echo "Starting ngrok..."
+	docker compose up -d ngrok
+	@echo "Done. ngrok started! Dashboard at http://localhost:4040"
+
+# Stop ngrok
+ngrok-down:
+	@echo "Stopping ngrok..."
+	docker compose stop ngrok
+	docker compose rm -f ngrok
+	@echo "Done. ngrok stopped!"
 
 # Run migrations (upgrade to head)
 migrate:
@@ -82,7 +97,7 @@ db-setup:
 	@$(MAKE) migrate
 	@echo "Importing seed data..."
 	@$(MAKE) seed
-	@echo "✅ Database setup complete!"
+	@echo "Done. Database setup complete!"
 
 # Ensure test database exists
 test-db-create:
@@ -91,63 +106,63 @@ test-db-create:
 
 # Run all tests
 test: test-db-create
-	@echo "🧪 Running all tests..."
+	@echo "Running all tests..."
 	docker compose exec -e PYTHONPATH=/app api uv run --group test pytest -v
-	@echo "✅ All tests passed!"
+	@echo "Done. All tests passed!"
 
 # Run unit tests only
 test-unit:
-	@echo "🧪 Running unit tests..."
+	@echo "Running unit tests..."
 	docker compose exec -e PYTHONPATH=/app api uv run --group test pytest tests/unit -v
-	@echo "✅ Unit tests passed!"
+	@echo "Done. Unit tests passed!"
 
 # Run integration tests only
 test-integration: test-db-create
-	@echo "🧪 Running integration tests..."
+	@echo "Running integration tests..."
 	docker compose exec -e PYTHONPATH=/app api uv run --group test pytest tests/integration -v
-	@echo "✅ Integration tests passed!"
+	@echo "Done. Integration tests passed!"
 
 # Run API tests only
 test-api: test-db-create
-	@echo "🧪 Running API tests..."
+	@echo "Running API tests..."
 	docker compose exec -e PYTHONPATH=/app api uv run --group test pytest tests/api -v
-	@echo "✅ API tests passed!"
+	@echo "Done. API tests passed!"
 
 # Run tests with coverage report
 test-cov: test-db-create
-	@echo "🧪 Running tests with coverage..."
+	@echo "Running tests with coverage..."
 	docker compose exec -e PYTHONPATH=/app api uv run --group test pytest --cov=app --cov-report=term-missing -v
-	@echo "✅ Tests with coverage complete!"
+	@echo "Done. Tests with coverage complete!"
 
 # Linting
 lint: lint-api lint-web
 
 lint-api:
-	@echo "🔍 Running Python linters..."
+	@echo "Running Python linters..."
 	docker compose exec api uv run ruff check app tests
 	docker compose exec api uv run mypy app
-	@echo "✅ Python linting passed!"
+	@echo "Done. Python linting passed!"
 
 lint-api-fix:
-	@echo "🧹 Auto-fixing + formatting Python (Ruff)..."
+	@echo "Auto-fixing + formatting Python (Ruff)..."
 	docker compose exec api uv run ruff check --fix app tests
 	docker compose exec api uv run ruff format app tests
-	@echo "✅ Ruff fix + format complete!"
+	@echo "Done. Ruff fix + format complete!"
 
 lint-web:
-	@echo "🔍 Running TypeScript linter..."
+	@echo "Running TypeScript linter..."
 	docker compose exec web pnpm lint
-	@echo "✅ TypeScript linting passed!"
+	@echo "Done. TypeScript linting passed!"
 
 # Formatting
 format: format-api
 
 format-api:
-	@echo "🎨 Formatting Python code..."
+	@echo "Formatting Python code..."
 	docker compose exec api uv run ruff format .
-	@echo "✅ Python formatting complete!"
+	@echo "Done. Python formatting complete!"
 
 format-check:
-	@echo "🔍 Checking Python formatting..."
+	@echo "Checking Python formatting..."
 	docker compose exec api uv run ruff format --check .
-	@echo "✅ Python formatting check passed!"
+	@echo "Done. Python formatting check passed!"

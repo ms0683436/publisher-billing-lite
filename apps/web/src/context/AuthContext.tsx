@@ -10,12 +10,13 @@ import type { AuthUser, LoginRequest } from "../types";
 import {
   login as apiLogin,
   logout as apiLogout,
+  refresh as apiRefresh,
   getCurrentUser,
 } from "../api/auth";
 import {
-  getAccessToken,
   setAccessToken,
   clearAccessToken,
+  onAuthFailure,
 } from "../api/client";
 
 export interface AuthContextType {
@@ -38,23 +39,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const isAuthenticated = user !== null;
 
-  // Check for existing session on mount
+  // Try to restore session on mount using refresh token cookie
   useEffect(() => {
     const initAuth = async () => {
-      const token = getAccessToken();
-      if (token) {
-        try {
-          const currentUser = await getCurrentUser(token);
-          setUser(currentUser);
-        } catch {
-          // Token is invalid, clear it
-          clearAccessToken();
-        }
+      try {
+        // Try to get new access token using refresh token cookie
+        const response = await apiRefresh();
+        setAccessToken(response.access_token);
+
+        // Get user info with the new token
+        const currentUser = await getCurrentUser(response.access_token);
+        setUser(currentUser);
+      } catch {
+        // No valid session, user needs to login
+        clearAccessToken();
       }
       setIsLoading(false);
     };
 
     initAuth();
+  }, []);
+
+  // Listen for auth failures (token refresh failed)
+  useEffect(() => {
+    const unsubscribe = onAuthFailure(() => {
+      setUser(null);
+    });
+    return unsubscribe;
   }, []);
 
   const login = useCallback(async (credentials: LoginRequest) => {

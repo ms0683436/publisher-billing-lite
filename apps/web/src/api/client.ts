@@ -1,18 +1,17 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-const ACCESS_TOKEN_KEY = "access_token";
+// In-memory token storage (more secure than localStorage - not accessible to XSS)
+let accessToken: string | null = null;
 
 // Token storage functions
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return accessToken;
 }
 
 export function setAccessToken(token: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  accessToken = token;
 }
 
 export function clearAccessToken(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  accessToken = null;
 }
 
 export class ApiError extends Error {
@@ -25,19 +24,32 @@ export class ApiError extends Error {
   }
 }
 
-// Flag to prevent multiple refresh attempts
-let isRefreshing = false;
-let refreshPromise: Promise<string> | null = null;
+// Event system for auth state changes
+type AuthEventListener = () => void;
+const authEventListeners = new Set<AuthEventListener>();
 
-async function refreshAccessToken(): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+export function onAuthFailure(listener: AuthEventListener): () => void {
+  authEventListeners.add(listener);
+  return () => authEventListeners.delete(listener);
+}
+
+function emitAuthFailure(): void {
+  authEventListeners.forEach((listener) => listener());
+}
+
+// Token refresh with proper race condition handling
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const response = await fetch("/api/v1/auth/refresh", {
     method: "POST",
     credentials: "include", // Include cookies for refresh token
   });
 
   if (!response.ok) {
     clearAccessToken();
-    throw new ApiError(response.status, "Token refresh failed");
+    emitAuthFailure();
+    return null;
   }
 
   const data = await response.json();
@@ -45,18 +57,30 @@ async function refreshAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-async function getValidAccessToken(): Promise<string | null> {
-  const token = getAccessToken();
-  if (!token) return null;
-  return token;
+async function getRefreshedToken(): Promise<string | null> {
+  // If a refresh is already in progress, wait for it
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  // Start a new refresh and store the promise
+  refreshPromise = refreshAccessToken().finally(() => {
+    // Clear the promise after a short delay to allow all pending requests
+    // to get the result before we allow new refresh attempts
+    setTimeout(() => {
+      refreshPromise = null;
+    }, 100);
+  });
+
+  return refreshPromise;
 }
 
 export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  const token = await getValidAccessToken();
+  const url = endpoint;
+  const token = getAccessToken();
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -73,35 +97,25 @@ export async function apiClient<T>(
     credentials: "include", // Include cookies
   });
 
-  // If unauthorized, try to refresh token and retry
+  // If unauthorized and we had a token, try to refresh
   if (response.status === 401 && token) {
-    // Prevent multiple simultaneous refresh attempts
-    if (!isRefreshing) {
-      isRefreshing = true;
-      refreshPromise = refreshAccessToken().finally(() => {
-        isRefreshing = false;
-        refreshPromise = null;
+    const newToken = await getRefreshedToken();
+
+    if (newToken) {
+      // Retry the original request with new token
+      const retryHeaders: HeadersInit = {
+        "Content-Type": "application/json",
+        ...options.headers,
+        Authorization: `Bearer ${newToken}`,
+      };
+
+      response = await fetch(url, {
+        ...options,
+        headers: retryHeaders,
+        credentials: "include",
       });
-    }
-
-    try {
-      const newToken = await refreshPromise;
-      if (newToken) {
-        // Retry the original request with new token
-        const retryHeaders: HeadersInit = {
-          "Content-Type": "application/json",
-          ...options.headers,
-          Authorization: `Bearer ${newToken}`,
-        };
-
-        response = await fetch(url, {
-          ...options,
-          headers: retryHeaders,
-          credentials: "include",
-        });
-      }
-    } catch {
-      // Refresh failed, throw the original 401 error
+    } else {
+      // Refresh failed
       throw new ApiError(401, "Authentication required");
     }
   }

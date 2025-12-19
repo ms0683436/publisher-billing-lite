@@ -36,11 +36,6 @@ export function NotificationBell() {
   const [toastNotification, setToastNotification] =
     useState<Notification | null>(null);
 
-  // Loading state for async operations
-  const [actionLoading, setActionLoading] = useState<number | "all" | null>(
-    null
-  );
-
   // Error toast state
   const [errorToastOpen, setErrorToastOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -76,9 +71,19 @@ export function NotificationBell() {
     setToastOpen(false);
   };
 
-  const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleOpen = async (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
     refetch();
+
+    // Automatically mark all as read when opening the popover
+    if (unreadCount > 0) {
+      try {
+        await markAllAsRead();
+      } catch {
+        setErrorMessage("Failed to mark notifications as read");
+        setErrorToastOpen(true);
+      }
+    }
   };
 
   const handleClose = () => {
@@ -86,31 +91,17 @@ export function NotificationBell() {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read if not already (handles notifications that arrived while popover is open)
     if (!notification.is_read) {
-      setActionLoading(notification.id);
       try {
         await markAsRead(notification.id);
       } catch {
         setErrorMessage("Failed to mark notification as read");
         setErrorToastOpen(true);
-      } finally {
-        setActionLoading(null);
       }
     }
     handleClose();
     // TODO: Navigate to the relevant campaign/comment when we have routing
-  };
-
-  const handleMarkAllAsRead = async () => {
-    setActionLoading("all");
-    try {
-      await markAllAsRead();
-    } catch {
-      setErrorMessage("Failed to mark all as read");
-      setErrorToastOpen(true);
-    } finally {
-      setActionLoading(null);
-    }
   };
 
   const handleErrorToastClose = () => {
@@ -149,26 +140,10 @@ export function NotificationBell() {
           },
         }}
       >
-        <Box
-          sx={{
-            p: 2,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <Box sx={{ p: 2 }}>
           <Typography variant="h6" component="h2">
             Notifications
           </Typography>
-          {unreadCount > 0 && (
-            <Button
-              size="small"
-              onClick={handleMarkAllAsRead}
-              disabled={actionLoading === "all"}
-            >
-              {actionLoading === "all" ? "Marking..." : "Mark all as read"}
-            </Button>
-          )}
         </Box>
 
         <Divider />

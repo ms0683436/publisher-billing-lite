@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Typography,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -17,8 +16,12 @@ import {
   Grid,
   Chip,
   Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useCampaign } from "../hooks/useCampaign";
 import { MoneyDisplay } from "../components/common/MoneyDisplay";
 import { CommentSection } from "../components/comments";
@@ -123,30 +126,35 @@ export function CampaignDetailPage() {
         </Box>
       )}
 
-      <Typography variant="h6" gutterBottom>
-        Line Items
-      </Typography>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell align="right">Booked Amount</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {campaign.line_items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.name}</TableCell>
-                <TableCell align="right">
-                  <MoneyDisplay value={item.booked_amount} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Accordion defaultExpanded disableGutters slotProps={{ transition: { timeout: 0 } }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">
+            Line Items ({campaign.line_items.length})
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ p: 0 }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell align="right">Booked Amount</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {campaign.line_items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell align="right">
+                      <MoneyDisplay value={item.booked_amount} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </AccordionDetails>
+      </Accordion>
 
       <Divider sx={{ my: 4 }} />
 

@@ -289,7 +289,7 @@ async def main():
     """CLI entry point for running seed import."""
     print("Starting seed data import...")
     counts = await import_seed_data()
-    print("✅ Seed import completed:")
+    print("Done. Seed import completed:")
     print(f"   Users: {counts['users']}")
     print(f"   Campaigns: {counts['campaigns']}")
     print(f"   Line items: {counts['line_items']}")
