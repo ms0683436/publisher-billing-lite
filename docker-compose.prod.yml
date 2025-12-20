@@ -1,0 +1,115 @@
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-publisher_billing}
+      - POSTGRES_USER=${POSTGRES_USER:-publisher}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-publisher}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U publisher -d publisher_billing"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: ./apps/api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    command: uv run gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api-migrate:
+    build: ./apps/api
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    command: uv run alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  notification-worker:
+    build: ./apps/api
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    command: uv run python -m app.workers.notification_worker
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  change-history-worker:
+    build: ./apps/api
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    command: uv run python -m app.workers.change_history_worker
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http --url=${NGROK_DOMAIN} web:80
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

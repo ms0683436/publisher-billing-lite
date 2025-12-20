@@ -1,4 +1,4 @@
-.PHONY: help up down ngrok ngrok-down web-install migrate migration-generate migration-downgrade db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
+.PHONY: help up down up-prod-ngrok down-prod ngrok ngrok-down web-install migrate migration-generate migration-downgrade db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
 
 help:
 	@echo "Available commands:"
@@ -55,6 +55,19 @@ down:
 	@echo "Stopping core services..."
 	docker compose down db redis api notification-worker change-history-worker web nginx
 	@echo "Done. Core services stopped!"
+
+# Start all production services with ngrok
+up-prod-ngrok:
+	@echo "Starting production services with ngrok..."
+	docker compose -f docker-compose.prod.yml up --build -d
+	@echo "Done. Production services started!"
+	@echo "Access the app at http://localhost (or via ngrok)"
+
+# Stop all production services
+down-prod:
+	@echo "Stopping production services..."
+	docker compose -f docker-compose.prod.yml down
+	@echo "Done. Production services stopped!"
 
 # Start ngrok for external access
 ngrok:

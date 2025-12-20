@@ -10,6 +10,7 @@ dependencies = [
     "sqlalchemy>=2,<3",
     "tqdm>=4.66",
     "uvicorn[standard]",
+    "gunicorn>=21",
     "bcrypt>=4.0,<4.1",
     "passlib[bcrypt]>=1.7.4",
     "PyJWT>=2.8.0",
