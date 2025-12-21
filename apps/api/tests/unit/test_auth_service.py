@@ -194,3 +194,58 @@ class TestTokenExpiration:
 
         with pytest.raises(InvalidTokenError):
             decode_access_token(expired_token)
+
+
+class TestTokenEdgeCases:
+    """Tests for edge cases in token handling."""
+
+    def test_decode_token_missing_type_field(self):
+        """Raises InvalidTokenError when token has no type field."""
+        settings = get_settings()
+
+        # Token without type field
+        payload = {
+            "sub": "1",
+            "username": "alice",
+            "exp": time.time() + 3600,
+        }
+        token = jwt.encode(
+            payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
+        )
+
+        with pytest.raises(InvalidTokenError):
+            decode_access_token(token)
+
+    def test_decode_token_empty_type_field(self):
+        """Raises InvalidTokenError when token has empty type field."""
+        settings = get_settings()
+
+        payload = {
+            "sub": "1",
+            "username": "alice",
+            "type": "",  # Empty type
+            "exp": time.time() + 3600,
+        }
+        token = jwt.encode(
+            payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
+        )
+
+        with pytest.raises(InvalidTokenError):
+            decode_access_token(token)
+
+    def test_decode_token_wrong_secret_key(self):
+        """Raises InvalidTokenError when token signed with different key."""
+        settings = get_settings()
+
+        payload = {
+            "sub": "1",
+            "username": "alice",
+            "type": TOKEN_TYPE_ACCESS,
+            "exp": time.time() + 3600,
+        }
+        token = jwt.encode(
+            payload, "wrong-secret-key", algorithm=settings.jwt_algorithm
+        )
+
+        with pytest.raises(InvalidTokenError):
+            decode_access_token(token)

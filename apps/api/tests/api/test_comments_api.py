@@ -199,6 +199,46 @@ class TestCreateComment:
 
         assert response.status_code == 403
 
+    async def test_create_reply_parent_not_found(
+        self, client, make_campaign, make_user
+    ):
+        """Returns 404 when parent comment doesn't exist."""
+        campaign = await make_campaign()
+        author = await make_user()
+
+        response = await client.post(
+            "/api/v1/comments",
+            json={
+                "content": "Reply to nonexistent",
+                "campaign_id": campaign.id,
+                "parent_id": 99999,
+            },
+            headers=auth_headers_for_user(author),
+        )
+
+        assert response.status_code == 404
+
+    async def test_create_reply_parent_different_campaign(
+        self, client, make_campaign, make_user, make_comment
+    ):
+        """Returns 404 when parent comment belongs to different campaign."""
+        campaign1 = await make_campaign(name="Campaign 1")
+        campaign2 = await make_campaign(name="Campaign 2")
+        author = await make_user()
+        parent = await make_comment(campaign1, author)
+
+        response = await client.post(
+            "/api/v1/comments",
+            json={
+                "content": "Cross-campaign reply",
+                "campaign_id": campaign2.id,
+                "parent_id": parent.id,
+            },
+            headers=auth_headers_for_user(author),
+        )
+
+        assert response.status_code == 404
+
 
 class TestUpdateComment:
     """Tests for PUT /api/v1/comments/{comment_id}."""

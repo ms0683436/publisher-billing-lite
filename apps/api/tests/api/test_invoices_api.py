@@ -549,3 +549,57 @@ class TestPatchInvoiceAdjustments:
         )
 
         assert response.status_code in (400, 422)
+
+    async def test_batch_update_infinity_rejected(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should reject Infinity values."""
+        campaign = await make_campaign(name="Test Campaign")
+        li = await make_line_item(campaign, name="Item 1")
+        invoice = await make_invoice(campaign)
+        ili = await make_invoice_line_item(
+            invoice, li, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili.id, "adjustments": "Infinity"},
+                ]
+            },
+        )
+
+        assert response.status_code in (400, 422)
+
+    async def test_batch_update_negative_infinity_rejected(
+        self,
+        client,
+        make_campaign,
+        make_line_item,
+        make_invoice,
+        make_invoice_line_item,
+    ):
+        """Should reject -Infinity values."""
+        campaign = await make_campaign(name="Test Campaign")
+        li = await make_line_item(campaign, name="Item 1")
+        invoice = await make_invoice(campaign)
+        ili = await make_invoice_line_item(
+            invoice, li, actual_amount=Decimal("100.00"), adjustments=Decimal("0.00")
+        )
+
+        response = await client.patch(
+            f"/api/v1/invoices/{invoice.id}/adjustments",
+            json={
+                "updates": [
+                    {"invoice_line_item_id": ili.id, "adjustments": "-Infinity"},
+                ]
+            },
+        )
+
+        assert response.status_code in (400, 422)
