@@ -3,6 +3,7 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import { theme } from "./theme";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { AppLayout } from "./components/layout/AppLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { CampaignsPage } from "./pages/CampaignsPage";
@@ -18,28 +19,30 @@ function App() {
       <CssBaseline />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public route */}
-            <Route path="/login" element={<LoginPage />} />
+          <ErrorBoundary>
+            <Routes>
+              {/* Public route */}
+              <Route path="/login" element={<LoginPage />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/campaigns" replace />} />
-              <Route path="campaigns" element={<CampaignsPage />} />
-              <Route path="campaigns/:id" element={<CampaignDetailPage />} />
-              <Route path="invoices" element={<InvoicesPage />} />
-              <Route path="invoices/:id" element={<InvoiceDetailPage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-          </Routes>
+              {/* Protected routes */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/campaigns" replace />} />
+                <Route path="campaigns" element={<CampaignsPage />} />
+                <Route path="campaigns/:id" element={<CampaignDetailPage />} />
+                <Route path="invoices" element={<InvoicesPage />} />
+                <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Routes>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

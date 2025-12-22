@@ -12,7 +12,21 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(errorBody || "Login failed");
+    let errorMessage = errorBody || "Login failed";
+
+    // Try to parse JSON and extract detail field
+    if (errorBody) {
+      try {
+        const errorJson = JSON.parse(errorBody);
+        if (errorJson.detail) {
+          errorMessage = errorJson.detail;
+        }
+      } catch {
+        // Not JSON, use raw text
+      }
+    }
+
+    throw new Error(errorMessage);
   }
 
   return response.json();

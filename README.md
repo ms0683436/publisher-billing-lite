@@ -16,7 +16,7 @@ make seed      # Import seed data (campaigns, invoices, users)
 Access the app at <http://localhost>
 
 - API Docs: <http://localhost/api/docs>
-- Login with any seeded user (e.g., `alice` / `password123`)
+- Login with any seeded user (e.g., `alice` / `password123`) - see [apps/api/app/seeds/users.json](apps/api/app/seeds/users.json)
 
 ```bash
 make down      # Stop all services
@@ -175,6 +175,7 @@ Why limit replies to one level instead of deeply nested threads?
 - Access token (15 min, stored in memory) + refresh token (7 days, HttpOnly cookie)
 - Auto-refresh on 401 response
 - Protected routes and API endpoints
+- Seeded users for testing - see [apps/api/app/seeds/users.json](apps/api/app/seeds/users.json)
 
 **Design decision - JWT vs Session:**
 
@@ -238,7 +239,7 @@ Why use Redis Queue instead of Procrastinate for notification processing?
 - **Language:** TypeScript
 - **Framework:** React (Vite)
 - **UI:** MUI
-- **Why this stack:** Strong developer ergonomics, fast HMR, accessible UI components out of the box
+- **Why this stack:** Strong developer ergonomics, accessible UI components out of the box
 - **Package manager:** pnpm (fast, disk-efficient, lockfile for reproducibility)
 
 ### Background Processing

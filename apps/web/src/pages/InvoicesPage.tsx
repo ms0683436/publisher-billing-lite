@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Typography,
@@ -21,7 +21,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useInvoices } from "../hooks/useInvoices";
 import { useDebounce } from "../hooks/useDebounce";
 import { useTableParams } from "../hooks/useTableParams";
-import { MoneyDisplay } from "../components/common/MoneyDisplay";
+import { InvoiceTableRow } from "../components/invoices/InvoiceTableRow";
 import type { InvoiceSortField } from "../types/common";
 
 interface SortableColumn {
@@ -84,6 +84,13 @@ export function InvoicesPage() {
 
   const navigate = useNavigate();
 
+  const handleRowClick = useCallback(
+    (id: number) => {
+      navigate(`/invoices/${id}`);
+    },
+    [navigate]
+  );
+
   if (error) {
     return <Alert severity="error">{error.message}</Alert>;
   }
@@ -122,7 +129,7 @@ export function InvoicesPage() {
           <TableHead>
             <TableRow>
               {columns.map((column) => (
-                <TableCell key={column.id} align={column.align}>
+                <TableCell key={column.id} align={column.align} scope="col">
                   {column.sortable ? (
                     <TableSortLabel
                       active={sortBy === column.id}
@@ -153,21 +160,11 @@ export function InvoicesPage() {
               </TableRow>
             ) : (
               invoices.map((invoice) => (
-                <TableRow
+                <InvoiceTableRow
                   key={invoice.id}
-                  hover
-                  onClick={() => navigate(`/invoices/${invoice.id}`)}
-                  sx={{ cursor: "pointer" }}
-                >
-                  <TableCell>#{invoice.id}</TableCell>
-                  <TableCell>{invoice.campaign_name}</TableCell>
-                  <TableCell align="right">
-                    <MoneyDisplay value={invoice.total_billable} />
-                  </TableCell>
-                  <TableCell align="center">
-                    {invoice.line_items_count}
-                  </TableCell>
-                </TableRow>
+                  invoice={invoice}
+                  onRowClick={handleRowClick}
+                />
               ))
             )}
           </TableBody>

@@ -282,12 +282,12 @@ export function InvoiceDetailPage() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell align="right">Booked</TableCell>
-              <TableCell align="right">Actual</TableCell>
-              <TableCell align="right">Adjustments</TableCell>
-              <TableCell align="right">Billable</TableCell>
-              <TableCell align="center" sx={{ width: 60 }}></TableCell>
+              <TableCell scope="col">Name</TableCell>
+              <TableCell scope="col" align="right">Booked</TableCell>
+              <TableCell scope="col" align="right">Actual</TableCell>
+              <TableCell scope="col" align="right">Adjustments</TableCell>
+              <TableCell scope="col" align="right">Billable</TableCell>
+              <TableCell scope="col" align="center" sx={{ width: 60 }}></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -327,6 +327,7 @@ export function InvoiceDetailPage() {
                       slotProps={{
                         htmlInput: {
                           inputMode: "decimal",
+                          "aria-label": `Adjustments for ${item.name}`,
                         },
                       }}
                     />

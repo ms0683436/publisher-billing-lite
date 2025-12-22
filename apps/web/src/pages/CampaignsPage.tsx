@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Typography,
@@ -13,7 +13,6 @@ import {
   TableSortLabel,
   CircularProgress,
   Alert,
-  Chip,
   Box,
   TextField,
   InputAdornment,
@@ -22,7 +21,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useCampaigns } from "../hooks/useCampaigns";
 import { useDebounce } from "../hooks/useDebounce";
 import { useTableParams } from "../hooks/useTableParams";
-import { MoneyDisplay } from "../components/common/MoneyDisplay";
+import { CampaignTableRow } from "../components/campaigns/CampaignTableRow";
 import type { CampaignSortField } from "../types/common";
 
 interface SortableColumn {
@@ -89,6 +88,20 @@ export function CampaignsPage() {
 
   const navigate = useNavigate();
 
+  const handleRowClick = useCallback(
+    (id: number) => {
+      navigate(`/campaigns/${id}`);
+    },
+    [navigate]
+  );
+
+  const handleInvoiceClick = useCallback(
+    (id: number) => {
+      navigate(`/invoices/${id}`);
+    },
+    [navigate]
+  );
+
   if (error) {
     return <Alert severity="error">{error.message}</Alert>;
   }
@@ -127,7 +140,7 @@ export function CampaignsPage() {
           <TableHead>
             <TableRow>
               {columns.map((column) => (
-                <TableCell key={column.id} align={column.align}>
+                <TableCell key={column.id} align={column.align} scope="col">
                   {column.sortable ? (
                     <TableSortLabel
                       active={sortBy === column.id}
@@ -141,7 +154,7 @@ export function CampaignsPage() {
                   )}
                 </TableCell>
               ))}
-              <TableCell align="center">Invoice</TableCell>
+              <TableCell align="center" scope="col">Invoice</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -159,42 +172,12 @@ export function CampaignsPage() {
               </TableRow>
             ) : (
               campaigns.map((campaign) => (
-                <TableRow
+                <CampaignTableRow
                   key={campaign.id}
-                  hover
-                  onClick={() => navigate(`/campaigns/${campaign.id}`)}
-                  sx={{ cursor: "pointer" }}
-                >
-                  <TableCell>{campaign.id}</TableCell>
-                  <TableCell>{campaign.name}</TableCell>
-                  <TableCell align="right">
-                    <MoneyDisplay value={campaign.total_booked} />
-                  </TableCell>
-                  <TableCell align="right">
-                    <MoneyDisplay value={campaign.total_actual} />
-                  </TableCell>
-                  <TableCell align="right">
-                    <MoneyDisplay value={campaign.total_billable} />
-                  </TableCell>
-                  <TableCell align="center">
-                    {campaign.line_items_count}
-                  </TableCell>
-                  <TableCell align="center">
-                    {campaign.invoice_id ? (
-                      <Chip
-                        label={`#${campaign.invoice_id}`}
-                        size="small"
-                        color="primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/invoices/${campaign.invoice_id}`);
-                        }}
-                      />
-                    ) : (
-                      <Chip label="None" size="small" variant="outlined" />
-                    )}
-                  </TableCell>
-                </TableRow>
+                  campaign={campaign}
+                  onRowClick={handleRowClick}
+                  onInvoiceClick={handleInvoiceClick}
+                />
               ))
             )}
           </TableBody>

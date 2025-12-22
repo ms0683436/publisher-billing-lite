@@ -137,8 +137,8 @@ export function CampaignDetailPage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell align="right">Booked Amount</TableCell>
+                  <TableCell scope="col">Name</TableCell>
+                  <TableCell scope="col" align="right">Booked Amount</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

@@ -1,11 +1,9 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { SortDirection } from "../types/common";
+import { PAGINATION } from "../constants";
 
-// Match backend constraints from deps.py
-const MIN_LIMIT = 1;
-const MAX_LIMIT = 200;
-const MIN_PAGE = 0;
+const { MIN_LIMIT, MAX_LIMIT, MIN_PAGE } = PAGINATION;
 
 /**
  * Safely parse integer from string with fallback and clamping.

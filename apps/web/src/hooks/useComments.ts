@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   fetchCampaignComments,
   createComment,
@@ -13,22 +13,51 @@ export function useComments(campaignId: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // AbortController ref for cancelling requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    // Cancel previous request if pending
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchCampaignComments(campaignId);
-      setComments(response.comments);
-      setTotal(response.total);
+      const response = await fetchCampaignComments(campaignId, controller.signal);
+      // Only update state if not aborted
+      if (!controller.signal.aborted) {
+        setComments(response.comments);
+        setTotal(response.total);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Unknown error"));
+      // Ignore abort errors
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+      }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [campaignId]);
 
   useEffect(() => {
     load();
+
+    // Cleanup: abort pending request on unmount or campaignId change
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [load]);
 
   const addComment = useCallback(

@@ -122,7 +122,21 @@ export async function apiClient<T>(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new ApiError(response.status, errorBody || response.statusText);
+    let errorMessage = errorBody || response.statusText;
+
+    // Try to parse JSON and extract detail field
+    if (errorBody) {
+      try {
+        const errorJson = JSON.parse(errorBody);
+        if (errorJson.detail) {
+          errorMessage = errorJson.detail;
+        }
+      } catch {
+        // Not JSON, use raw text
+      }
+    }
+
+    throw new ApiError(response.status, errorMessage);
   }
 
   // Handle 204 No Content responses

@@ -7,10 +7,12 @@ import type {
 } from "../types/comment";
 
 export async function fetchCampaignComments(
-  campaignId: number
+  campaignId: number,
+  signal?: AbortSignal
 ): Promise<CommentListResponse> {
   return apiClient<CommentListResponse>(
-    `/api/v1/campaigns/${campaignId}/comments`
+    `/api/v1/campaigns/${campaignId}/comments`,
+    { signal }
   );
 }
 

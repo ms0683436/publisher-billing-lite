@@ -34,7 +34,7 @@ services:
     env_file:
       - .env
     environment:
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-default_jwt_secret_key}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     command: uv run gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
     depends_on:
@@ -51,7 +51,7 @@ services:
     env_file:
       - .env
     environment:
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-default_jwt_secret_key}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     command: uv run alembic upgrade head
     depends_on:
@@ -64,7 +64,7 @@ services:
     env_file:
       - .env
     environment:
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-default_jwt_secret_key}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     command: uv run python -m app.workers.notification_worker
     depends_on:
@@ -81,7 +81,7 @@ services:
     env_file:
       - .env
     environment:
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-default_jwt_secret_key}
     command: uv run python -m app.workers.change_history_worker
     depends_on:
       api-migrate:

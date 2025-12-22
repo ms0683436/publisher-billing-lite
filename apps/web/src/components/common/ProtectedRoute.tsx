@@ -22,7 +22,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         role="status"
         aria-label="Loading"
       >
-        <CircularProgress aria-label="Loading" />
+        <CircularProgress
+          role="progressbar"
+          aria-label="Loading"
+          aria-busy="true"
+        />
       </Box>
     );
   }

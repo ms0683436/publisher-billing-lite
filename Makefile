@@ -58,6 +58,13 @@ down:
 
 # Start production services with ngrok
 up-prod:
+	@if [ ! -f .env ]; then \
+		echo ".env not found, creating from .env.example..."; \
+		cp .env.example .env; \
+		echo "Done. .env created. You can edit it to change ports if needed."; \
+	else \
+		echo ".env already exists."; \
+	fi
 	@echo "Starting production services with ngrok..."
 	docker compose -f docker-compose.prod.yml up --build -d
 	@echo "Done. Production services started!"
