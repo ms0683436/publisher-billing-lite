@@ -126,7 +126,7 @@ export function CampaignDetailPage() {
         </Box>
       )}
 
-      <Accordion defaultExpanded disableGutters slotProps={{ transition: { timeout: 0 } }}>
+      <Accordion disableGutters slotProps={{ transition: { timeout: 0 } }}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6">
             Line Items ({campaign.line_items.length})

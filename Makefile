@@ -1,10 +1,11 @@
-.PHONY: help up down up-prod-ngrok down-prod ngrok ngrok-down web-install migrate migration-generate migration-downgrade db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
+.PHONY: help up down up-prod down-prod web-install migrate migration-generate migration-downgrade db-reset seed db-setup test test-unit test-integration test-api test-cov lint lint-api lint-api-fix lint-web format format-api format-check
 
 help:
 	@echo "Available commands:"
-	@echo "  make up                   - Start core services with nginx (creates .env if needed)"
-	@echo "  make down                 - Stop core services (keeps ngrok running)"
-	@echo "  make ngrok                - Start ngrok for external access"
+	@echo "  make up                   - Start all dev services (creates .env if needed)"
+	@echo "  make down                 - Stop all dev services"
+	@echo "  make up-prod              - Start production services with ngrok"
+	@echo "  make down-prod            - Stop production services"
 	@echo "  make migrate              - Run all migrations (upgrade to head)"
 	@echo "  make migration-generate   - Generate a new migration (autogenerate)"
 	@echo "  make migration-downgrade  - Downgrade database by 1 revision"
@@ -28,7 +29,7 @@ help:
 	@echo "  make format-api           - Run Ruff format (Python)"
 	@echo "  make format-check         - Check formatting without changes"
 
-# Start core services (create .env if needed)
+# Start all dev services (create .env if needed)
 up:
 	@if [ ! -f .env ]; then \
 		echo ".env not found, creating from .env.example..."; \
@@ -37,50 +38,36 @@ up:
 	else \
 		echo ".env already exists."; \
 	fi
-	@echo "Starting core services..."
-	docker compose up --build -d db redis api notification-worker change-history-worker web nginx
+	@echo "Starting all services..."
+	docker compose up --build -d
 	@echo "Done. Services started!"
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Run 'make db-setup' to initialize the database"
 	@echo "  2. Access the app at http://localhost"
-	@echo "  3. Run 'make ngrok' for external access via ngrok"
 
 # Update web dependencies in named volume (run when package.json changes)
 web-install:
 	docker compose exec web pnpm install --frozen-lockfile
 
-# Stop core services (keeps ngrok running if started separately)
+# Stop all dev services
 down:
-	@echo "Stopping core services..."
-	docker compose down db redis api notification-worker change-history-worker web nginx
-	@echo "Done. Core services stopped!"
+	@echo "Stopping all services..."
+	docker compose down
+	@echo "Done. All services stopped!"
 
-# Start all production services with ngrok
-up-prod-ngrok:
+# Start production services with ngrok
+up-prod:
 	@echo "Starting production services with ngrok..."
 	docker compose -f docker-compose.prod.yml up --build -d
 	@echo "Done. Production services started!"
 	@echo "Access the app at http://localhost (or via ngrok)"
 
-# Stop all production services
+# Stop production services
 down-prod:
 	@echo "Stopping production services..."
 	docker compose -f docker-compose.prod.yml down
 	@echo "Done. Production services stopped!"
-
-# Start ngrok for external access
-ngrok:
-	@echo "Starting ngrok..."
-	docker compose up -d ngrok
-	@echo "Done. ngrok started! Dashboard at http://localhost:4040"
-
-# Stop ngrok
-ngrok-down:
-	@echo "Stopping ngrok..."
-	docker compose stop ngrok
-	docker compose rm -f ngrok
-	@echo "Done. ngrok stopped!"
 
 # Run migrations (upgrade to head)
 migrate:

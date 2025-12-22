@@ -64,6 +64,21 @@ markers = [
     "sync_change_history: mark test to execute change history synchronously (bypass queue)",
 ]
 
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/seed.py",
+    "app/workers/*",
+    "app/queue/tasks/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

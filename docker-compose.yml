@@ -125,16 +125,6 @@ services:
       - web
       - api
 
-  ngrok:
-    image: ngrok/ngrok:latest
-    command: http --url=${NGROK_DOMAIN} nginx:80
-    environment:
-      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
-    ports:
-      - "4040:4040"
-    depends_on:
-      - nginx
-
 volumes:
   postgres_data:
   web_node_modules:
