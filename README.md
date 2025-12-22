@@ -130,6 +130,24 @@ Why batch instead of individual updates per line item?
 - JSONB storage for flexible old/new value comparison
 - Timeline view showing: field changed, old value, new value, editor, timestamp
 
+```mermaid
+erDiagram
+    change_history ||--o| users : "changed_by"
+    change_history {
+        int id PK
+        string entity_type "invoice_line_item, comment"
+        int entity_id "polymorphic FK"
+        jsonb old_value "nullable for creation"
+        jsonb new_value
+        int changed_by_user_id FK
+        timestamp created_at
+    }
+    users {
+        int id PK
+        string username
+    }
+```
+
 **Design decision - Async processing:**
 
 Why process change history asynchronously instead of synchronously?
@@ -250,6 +268,18 @@ Why use Redis Queue instead of Procrastinate for notification processing?
 ### Dev/Runtime
 
 - Docker + Docker Compose (one-command startup)
+
+### Architecture Pattern: Service-Repository
+
+```text
+routes (api/v1/) → services/ → repositories/ → models/
+```
+
+**Why Service-Repository instead of full DDD:**
+
+- **Right-sized complexity** - This is a billing CRUD app, not a complex domain with intricate business rules. Full DDD (aggregates, domain events, value objects) would be over-engineering.
+- **Clear separation of concerns** - Routes handle HTTP, services handle business logic, repositories handle data access. Easy to test each layer independently.
+- **Familiar pattern** - Most Python/FastAPI developers understand this structure immediately.
 
 ---
 
