@@ -136,7 +136,7 @@ export function NotificationBell() {
         }}
         slotProps={{
           paper: {
-            sx: { width: 360, maxHeight: 400 },
+            sx: { width: 360 },
           },
         }}
       >
@@ -168,7 +168,7 @@ export function NotificationBell() {
 
         {!loading && !error && notifications.length > 0 && (
           <List disablePadding>
-            {notifications.map((notification) => (
+            {notifications.slice(0, 5).map((notification) => (
               <ListItemButton
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
